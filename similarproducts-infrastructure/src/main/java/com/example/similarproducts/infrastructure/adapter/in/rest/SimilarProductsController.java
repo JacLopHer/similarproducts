@@ -3,6 +3,7 @@ package com.example.similarproducts.infrastructure.adapter.in.rest;
 import com.example.similarproducts.application.dto.ProductDetailDto;
 import com.example.similarproducts.application.service.GetSimilarProductsService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -18,10 +19,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+/**
+ * REST Controller for retrieving similar products.
+ * Exposes reactive endpoints to obtain similar products through WebFlux.
+ */
 @RestController
 @RequestMapping("/product")
 @Validated
-@Tag(name = "Similar Products", description = "API para consultar productos similares")
+@Tag(name = "Similar Products", description = "API to retrieve similar products")
 public class SimilarProductsController {
 
     private final GetSimilarProductsService getSimilarProductsService;
@@ -31,19 +36,22 @@ public class SimilarProductsController {
     }
 
     @GetMapping("/{productId}/similar")
-    @Operation(summary = "Obtener productos similares",
-            description = "Retorna una lista de productos similares al producto especificado")
+    @Operation(summary = "Get similar products",
+            description = "Returns a list of products similar to the specified product. " +
+                    "Performs non-blocking (reactive) calls to external APIs with controlled concurrency.")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Lista de productos similares obtenida exitosamente",
+        @ApiResponse(responseCode = "200", description = "Similar products list retrieved successfully",
                 content = @Content(mediaType = "application/json",
-                        schema = @Schema(example = "[{\"id\":\"2\",\"name\":\"Similar Product\",\"price\":29.99,\"availability\":true}]"))),
-        @ApiResponse(responseCode = "400", description = "ID de producto inválido o vacío"),
-        @ApiResponse(responseCode = "404", description = "Producto no encontrado"),
-        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+                        schema = @Schema(implementation = ProductDetailDto.class, type = "array"))),
+        @ApiResponse(responseCode = "400", description = "Invalid or empty product ID"),
+        @ApiResponse(responseCode = "404", description = "Product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public Mono<ResponseEntity<List<ProductDetailDto>>> getSimilarProducts(
             @PathVariable 
-            @NotBlank(message = "El ID del producto no puede estar vacío")
+            @Parameter(description = "Unique product ID to retrieve similar products for",
+                    required = true, example = "1")
+            @NotBlank(message = "Product ID cannot be blank")
             String productId) {
         return getSimilarProductsService.getSimilarProducts(productId)
             .map(response -> ResponseEntity.ok(response.products()));
