@@ -5,45 +5,48 @@ import com.example.similarproducts.domain.model.Product;
 import com.example.similarproducts.domain.port.ProductDetailPort;
 import com.example.similarproducts.infrastructure.mapper.AdapterMapper;
 import java.math.BigDecimal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 @Component
 public class ProductDetailAdapter implements ProductDetailPort {
 
-    private final RestTemplate restTemplate;
+    private static final Logger logger = LoggerFactory.getLogger(ProductDetailAdapter.class);
+
+    private final WebClient webClient;
     private final AdapterMapper adapterMapper;
-    private final String baseUrl;
     private final String productDetailEndpoint;
 
     public ProductDetailAdapter(
-        RestTemplate restTemplate,
+        WebClient webClient,
         AdapterMapper adapterMapper,
-        @Value("${external-api.base-url}") String baseUrl,
         @Value("${external-api.endpoints.product-detail}") String productDetailEndpoint
     ) {
-        this.restTemplate = restTemplate;
+        this.webClient = webClient;
         this.adapterMapper = adapterMapper;
-        this.baseUrl = baseUrl;
         this.productDetailEndpoint = productDetailEndpoint;
     }
 
     @Override
     public Mono<Product> getProductDetail(String productId) {
-        return Mono.fromCallable(() -> {
-                String url = baseUrl + productDetailEndpoint.replace("{productId}", productId);
-                ProductDetailResponse response = restTemplate.getForObject(url, ProductDetailResponse.class);
-                if (response == null) {
-                    throw new ProductNotFoundException("Product not found: " + productId);
-                }
-                return adapterMapper.toDomain(response);
-            })
-            .onErrorMap(HttpClientErrorException.NotFound.class, ex -> new ProductNotFoundException("Product not found: " + productId))
-            .subscribeOn(Schedulers.boundedElastic());
+        String url = productDetailEndpoint.replace("{productId}", productId);
+        logger.debug("Fetching product detail for productId: {} from URL: {}", productId, url);
+
+        return webClient.get()
+            .uri(url)
+            .retrieve()
+            .onStatus(status -> status.value() == 404,
+                response -> Mono.error(new ProductNotFoundException("Product not found: " + productId)))
+            .bodyToMono(ProductDetailResponse.class)
+            .map(adapterMapper::toDomain)
+            .doOnNext(product -> logger.debug("Retrieved product: {}", product))
+            .doOnError(ex -> logger.error("Error fetching product detail for productId {}: {}", productId, ex.getMessage()))
+            .onErrorMap(WebClientResponseException.NotFound.class, ex -> new ProductNotFoundException("Product not found: " + productId));
     }
 
     public record ProductDetailResponse(String id, String name, BigDecimal price, boolean availability) {

@@ -2,45 +2,45 @@ package com.example.similarproducts.infrastructure.adapter.out.client;
 
 import com.example.similarproducts.domain.exception.ProductNotFoundException;
 import com.example.similarproducts.domain.port.SimilarIdsPort;
-import java.util.Arrays;
-import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
+import reactor.core.publisher.Mono;
 
 @Component
 public class SimilarIdsAdapter implements SimilarIdsPort {
 
-    private final RestTemplate restTemplate;
-    private final String baseUrl;
+    private static final Logger logger = LoggerFactory.getLogger(SimilarIdsAdapter.class);
+
+    private final WebClient webClient;
     private final String similarIdsEndpoint;
 
     public SimilarIdsAdapter(
-        RestTemplate restTemplate,
-        @Value("${external-api.base-url}") String baseUrl,
+        WebClient webClient,
         @Value("${external-api.endpoints.similar-ids}") String similarIdsEndpoint
     ) {
-        this.restTemplate = restTemplate;
-        this.baseUrl = baseUrl;
+        this.webClient = webClient;
         this.similarIdsEndpoint = similarIdsEndpoint;
     }
 
     @Override
     public Flux<String> getSimilarIds(String productId) {
-        return Flux.defer(() -> {
-                String url = baseUrl + similarIdsEndpoint.replace("{productId}", productId);
-                try {
-                    String[] response = restTemplate.getForObject(url, String[].class);
-                    List<String> similarIds = response == null ? List.of() : Arrays.asList(response);
-                    return Flux.fromIterable(similarIds);
-                } catch (HttpClientErrorException.NotFound ex) {
-                    return Flux.error(new ProductNotFoundException("Product not found: " + productId));
-                }
-            })
-            .subscribeOn(Schedulers.boundedElastic());
+        String url = similarIdsEndpoint.replace("{productId}", productId);
+        logger.debug("Fetching similar IDs for productId: {} from URL: {}", productId, url);
+
+        return webClient.get()
+            .uri(url)
+            .retrieve()
+            .onStatus(status -> status.value() == 404,
+                response -> Mono.error(new ProductNotFoundException("Product not found: " + productId)))
+            .bodyToFlux(String.class)
+            .doOnNext(id -> logger.debug("Retrieved similar ID: {}", id))
+            .doOnError(ex -> logger.error("Error fetching similar IDs for productId {}: {}", productId, ex.getMessage()))
+            .onErrorMap(WebClientResponseException.NotFound.class, ex -> new ProductNotFoundException("Product not found: " + productId));
     }
 }
 
