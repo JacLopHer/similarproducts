@@ -1,0 +1,28 @@
+services:
+  similarproducts-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      EXTERNAL_API_BASE_URL: http://simulado:80
+    depends_on:
+      - simulado
+    networks:
+      - similarproducts-net
+
+  simulado:
+    image: ldabiralai/simulado:latest
+    ports:
+      - "3001:80"
+    volumes:
+      - ./shared/simulado:/app
+    command: ./bin/simulado -f /app/mocks.json
+    networks:
+      - similarproducts-net
+
+networks:
+  similarproducts-net:
+    driver: bridge
+

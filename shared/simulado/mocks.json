@@ -1,0 +1,32 @@
+[
+  {
+    "method": "GET",
+    "path": "/product/1/similarids",
+    "status": 200,
+    "body": ["2", "3"]
+  },
+  {
+    "method": "GET",
+    "path": "/product/2",
+    "status": 200,
+    "body": {
+      "id": "2",
+      "name": "Dress",
+      "price": 19.99,
+      "availability": true
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/product/3",
+    "status": 200,
+    "body": {
+      "id": "3",
+      "name": "Blazer",
+      "price": 29.99,
+      "availability": false
+    }
+  }
+]
+
+
