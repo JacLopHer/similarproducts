@@ -11,12 +11,23 @@ import reactor.core.publisher.Mono;
 
 public class GetSimilarProductsUseCase {
 
+    private static final int DEFAULT_DETAIL_CONCURRENCY = 4;
+
     private final SimilarIdsPort similarIdsPort;
     private final ProductDetailPort productDetailPort;
+    private final int detailConcurrency;
 
     public GetSimilarProductsUseCase(SimilarIdsPort similarIdsPort, ProductDetailPort productDetailPort) {
+        this(similarIdsPort, productDetailPort, DEFAULT_DETAIL_CONCURRENCY);
+    }
+
+    public GetSimilarProductsUseCase(SimilarIdsPort similarIdsPort, ProductDetailPort productDetailPort, int detailConcurrency) {
         this.similarIdsPort = Objects.requireNonNull(similarIdsPort, "similarIdsPort is required");
         this.productDetailPort = Objects.requireNonNull(productDetailPort, "productDetailPort is required");
+        if (detailConcurrency <= 0) {
+            throw new IllegalArgumentException("detailConcurrency must be greater than zero");
+        }
+        this.detailConcurrency = detailConcurrency;
     }
 
     public Mono<SimilarProductsResponse> execute(SimilarProductsRequest request) {
@@ -27,7 +38,7 @@ public class GetSimilarProductsUseCase {
             .map(String::trim)
             .filter(id -> !id.isEmpty())
             .distinct()
-            .flatMapSequential(productDetailPort::getProductDetail)
+            .flatMapSequential(productDetailPort::getProductDetail, detailConcurrency, detailConcurrency)
             .collectList()
             .map(SimilarProductsResponse::new);
     }
