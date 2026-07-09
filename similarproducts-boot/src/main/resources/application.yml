@@ -16,14 +16,27 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
+# Configuración de APIs externas con resiliencia
 external-api:
   base-url: http://localhost:3001
   endpoints:
     similar-ids: /product/{productId}/similarids
     product-detail: /product/{productId}
   timeout:
+    # Timeout de conexión: 5 segundos
     connect-ms: 5000
+    # Timeout de lectura: 10 segundos
     read-ms: 10000
+  # Pool de conexiones (configurado en HttpClientConfig)
+  connection-pool:
+    max-connections: 50
+    pending-acquire-max: 100
+    acquire-timeout-ms: 5000
+    max-idle-time-ms: 30000
+  # Reintentos
+  retry:
+    max-attempts: 2
+    retry-delay-ms: 100
 
 ---
 spring:
@@ -34,7 +47,11 @@ spring:
 logging:
   level:
     root: INFO
-    org.inditex.similarproducts: DEBUG
+    com.example.similarproducts: DEBUG
+    org.springframework.web.reactive.function.client: DEBUG
+    reactor.netty.http.client: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
 ---
 spring:
@@ -45,7 +62,9 @@ spring:
 logging:
   level:
     root: WARN
-    org.inditex.similarproducts: INFO
+    com.example.similarproducts: INFO
+    org.springframework.web.reactive.function.client: WARN
+    reactor.netty.http.client: WARN
 
 ---
 spring:
@@ -56,5 +75,9 @@ spring:
 logging:
   level:
     root: INFO
-    org.inditex.similarproducts: INFO
+    com.example.similarproducts: INFO
+    org.springframework.web.reactive.function.client: WARN
+    reactor.netty.http.client: WARN
+  pattern:
+    console: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"
 
