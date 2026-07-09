@@ -11,6 +11,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +30,8 @@ import reactor.core.publisher.Mono;
 @Validated
 @Tag(name = "Similar Products", description = "API to retrieve similar products")
 public class SimilarProductsController {
+
+    private static final Logger logger = LoggerFactory.getLogger(SimilarProductsController.class);
 
     private final GetSimilarProductsService getSimilarProductsService;
 
@@ -53,8 +57,18 @@ public class SimilarProductsController {
                     required = true, example = "1")
             @NotBlank(message = "Product ID cannot be blank")
             String productId) {
+        logger.info("Incoming request: GET /product/{}/similar", productId);
+        logger.debug("Controller - Processing request for productId: {}", productId);
+
         return getSimilarProductsService.getSimilarProducts(productId)
-            .map(response -> ResponseEntity.ok(response.products()));
+            .map(response -> ResponseEntity.ok(response.products()))
+            .doOnSuccess(response ->
+                logger.info("Request completed successfully for productId: {} - Found {} similar products",
+                    productId, response.getBody() != null ? response.getBody().size() : 0)
+            )
+            .doOnError(error -> logger.error("Request failed for productId: {} - Error: {}",
+                productId, error.getClass().getSimpleName()))
+            .doFinally(signalType -> logger.debug("Controller - Request processing finished for productId: {}", productId));
     }
 }
 

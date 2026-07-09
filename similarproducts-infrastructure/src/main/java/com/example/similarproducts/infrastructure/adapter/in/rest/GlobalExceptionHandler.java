@@ -41,7 +41,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleProductNotFound(
         ProductNotFoundException ex,
         WebRequest request) {
-        logger.warn("Product not found: {}", ex.getMessage());
+        String uri = request.getDescription(false).replace("uri=", "");
+        logger.warn("ProductNotFoundException - URI: {}, Message: {}", uri, ex.getMessage());
+        logger.debug("ProductNotFoundException - Full trace available in application logs");
+
         return buildErrorResponse(
             HttpStatus.NOT_FOUND,
             "PRODUCT_NOT_FOUND",
@@ -64,7 +67,11 @@ public class GlobalExceptionHandler {
         String errorCode = ex instanceof InvalidProductIdException 
             ? "INVALID_PRODUCT_ID" 
             : "VALIDATION_ERROR";
-        logger.warn("Validation error - {}: {}", errorCode, ex.getMessage());
+        String uri = request.getDescription(false).replace("uri=", "");
+        logger.warn("BadRequest ({})) - URI: {}, Error: {}, Message: {}",
+            errorCode, uri, ex.getClass().getSimpleName(), ex.getMessage());
+        logger.debug("BadRequest - Full exception: ", ex);
+
         return buildErrorResponse(
             HttpStatus.BAD_REQUEST,
             errorCode,
@@ -84,7 +91,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnexpected(
         Exception ex,
         WebRequest request) {
-        logger.error("Unexpected error", ex);
+        String uri = request.getDescription(false).replace("uri=", "");
+        logger.error("Unexpected error - URI: {}, Exception: {}, Message: {}",
+            uri, ex.getClass().getSimpleName(), ex.getMessage());
+        logger.debug("Full stack trace for debugging:", ex);
+
         return buildErrorResponse(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "INTERNAL_SERVER_ERROR",
