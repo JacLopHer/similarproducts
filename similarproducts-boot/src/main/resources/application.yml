@@ -1,0 +1,51 @@
+server:
+  port: 5000
+
+spring:
+  application:
+    name: similarproducts
+  profiles:
+    active: dev
+
+external-api:
+  base-url: http://localhost:3001
+  endpoints:
+    similar-ids: /product/{productId}/similarids
+    product-detail: /product/{productId}
+  timeout:
+    connect-ms: 5000
+    read-ms: 10000
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+logging:
+  level:
+    root: INFO
+    org.inditex.similarproducts: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+
+logging:
+  level:
+    root: WARN
+    org.inditex.similarproducts: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+logging:
+  level:
+    root: INFO
+    org.inditex.similarproducts: INFO
+
