@@ -1,7 +1,9 @@
 # Plan: Implementación de API de Productos Similares con Arquitectura Hexagonal MULTIMODULO
 
 ## TL;DR
-Crear una aplicación Spring Boot **MULTIMODULO** en puerto 5000 que expone un endpoint `/product/{productId}/similar` consumiendo dos APIs externas. 
+Crear una aplicación Spring Boot **MULTIMODULO** en puerto 5000 que expone un endpoint `/product/{productId}/similar` consumiendo dos APIs externas.
+
+**Decisión técnica clave para este reto:** usar **Spring WebFlux + WebClient** desde el inicio para maximizar throughput, reducir bloqueo de hilos y soportar tests de alta concurrencia.
 
 **Estructura multimodulo hexagonal:**
 - **domain**: Lógica pura sin dependencias externas
@@ -23,12 +25,13 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
     - Propiedades comunes (Java version, encoding, etc.)
     - Dependencymanagement con versiones compartidas:
       - Spring Boot BOM
-      - `spring-boot-starter-web` (REST)
+      - `spring-boot-starter-webflux` (REST reactivo / non-blocking)
       - `spring-boot-starter-test` (testing)
       - `lombok` (boilerplate reduction)
-      - `springdoc-openapi-starter-webmvc-ui` (Swagger/OpenAPI)
+      - `springdoc-openapi-starter-webflux-ui` (Swagger/OpenAPI para WebFlux)
       - `spring-boot-starter-validation` (bean validation)
       - `restassured` (testing HTTP)
+      - `reactor-test` (tests reactivos con StepVerifier)
     - Módulos: `<modules>` para 4 submódulos
     - `<packaging>pom</packaging>`
   
@@ -41,7 +44,8 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
   - Configurar `application.yml` SOLO en boot:
     - Puerto 5000
     - URLs de APIs externas (localhost:3001)
-    - Timeouts y configuraciones de cliente HTTP
+    - Timeouts y configuraciones de cliente HTTP reactivo (`WebClient`/Reactor Netty)
+    - Pool de conexiones, response timeout y límites de concurrencia saliente
     - Perfiles (dev, test, prod)
   
   - Estructura de carpetas Maven estándar para CADA módulo (`src/main/java`, `src/test/java`)
@@ -132,6 +136,7 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
   - Testing independiente de cada módulo
   - Fácil mantener arquitectura limpia
   - Claramente demuestra dominio de hexagonal
+  - Permite encapsular un stack reactivo en adapters y casos de uso sin contaminar modelos con detalles de transporte
 
 ### Task 1.3: Inicializar repositorio Git
 - **Objetivo:** Preparar proyecto para repo público
@@ -183,18 +188,20 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
   - Crear clase `SimilarProductsRequest` (productId)
   - Crear clase `SimilarProductsResponse` (lista de productos)
   - Usar `@Value` o registros (records) de Java 15+ para inmutabilidad
+  - Mantener los modelos de dominio agnósticos de Spring/WebFlux; la reactividad se introduce en contratos y orquestación, no en el estado del dominio
 
 ### Task 2.2: Crear puertos (interfaces)
 - **Objetivo:** Definir contratos para adapters externos
 - **Subtareas:**
   - Crear `SimilarIdsPort`: 
     ```java
-    List<String> getSimilarIds(String productId)
+    Flux<String> getSimilarIds(String productId)
     ```
   - Crear `ProductDetailPort`:
     ```java
-    Product getProductDetail(String productId)
+    Mono<Product> getProductDetail(String productId)
     ```
+  - Documentar que los puertos son reactivos para preservar una cadena end-to-end non-blocking bajo alta concurrencia
 
 ### Task 2.3: Implementar use case
 - **Objetivo:** Orquestar lógica de negocio
@@ -203,8 +210,10 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
   - Inyectar `SimilarIdsPort` y `ProductDetailPort`
   - Implementar lógica:
     1. Obtener IDs similares del producto
-    2. Para cada ID, obtener detalles del producto
-    3. Retornar lista de productos
+    2. Para cada ID, obtener detalles del producto usando composición reactiva
+    3. Ejecutar fan-out de detalle en paralelo con concurrencia acotada
+    4. Retornar `Flux<Product>` o `Mono<List<Product>>` según el contrato elegido
+  - Considerar `flatMapSequential(..., concurrency)` o patrón equivalente para balancear paralelismo, orden y protección del servicio downstream
   - Manejar casos edge (sin similares, producto no encontrado)
 
 ### Task 2.4: Agregar manejo de excepciones de dominio
@@ -225,7 +234,7 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
   - Implementar endpoint: `GET /product/{productId}/similar`
   - Validar parámetro `productId` (no vacío, formato correcto)
   - Inyectar `GetSimilarProductsUseCase`
-  - Retornar `ResponseEntity<List<ProductDetailDto>>`
+  - Retornar `Flux<ProductDetailDto>` o `Mono<ResponseEntity<List<ProductDetailDto>>>` usando WebFlux
 
 ### Task 3.2: Mapeo de DTOs
 - **Objetivo:** Convertir modelos de dominio a DTOs HTTP
@@ -237,7 +246,7 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
 ### Task 3.3: Configurar SwaggerUI/Springdoc
 - **Objetivo:** Documentar API automáticamente
 - **Subtareas:**
-  - Agregar `springdoc-openapi-starter-webmvc-ui` en pom.xml
+  - Agregar `springdoc-openapi-starter-webflux-ui` en pom.xml
   - Anotar endpoint con `@Operation`, `@ApiResponse`
   - Crear `SwaggerConfig` con información de la API
   - Accesible en `http://localhost:5000/swagger-ui.html`
@@ -259,9 +268,9 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
 - **Objetivo:** Llamar API externa de IDs similares
 - **Subtareas:**
   - Crear `SimilarIdsAdapter` implementando `SimilarIdsPort`
-  - Usar `RestTemplate` o `WebClient` para HTTP
+  - Usar `WebClient` para HTTP non-blocking
   - Endpoint: `GET http://localhost:3001/product/{productId}/similarids`
-  - Parsear respuesta JSON a `List<String>`
+  - Parsear respuesta JSON a `Flux<String>` o `Mono<List<String>>` según contrato
   - Manejo de errores: 404 → lanzar `ProductNotFoundException`
 
 ### Task 4.2: Implementar ProductDetailAdapter
@@ -269,15 +278,17 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
 - **Subtareas:**
   - Crear `ProductDetailAdapter` implementando `ProductDetailPort`
   - Endpoint: `GET http://localhost:3001/product/{productId}`
-  - Parsear respuesta JSON a `Product`
+  - Parsear respuesta JSON a `Mono<Product>`
   - Manejo de errores: 404 → lanzar `ProductNotFoundException`
 
 ### Task 4.3: Configurar resilencia
 - **Objetivo:** Mejorar robustez ante fallos de servicios externos
 - **Subtareas:**
   - Configurar timeouts (ej: 5s para conexión, 10s para lectura)
+  - Configurar `ConnectionProvider`/pool de Reactor Netty y límites de conexiones activas
   - Logging detallado de llamadas HTTP (request/response)
   - Manejo de excepciones de red (timeout, connection refused)
+  - Limitar concurrencia de llamadas downstream por request para evitar saturar el mock/servicio externo
   - Opcional: Agregar reintentos con `@Retry` o `CircuitBreaker`
 
 ### Task 4.4: Agregar logging
@@ -312,8 +323,9 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
   6. Maneja fallo en adapter de detalles (uno de los IDs)
   7. No duplica productos
   8. Mapea correctamente de Domain a DTOs
+  9. Respeta orden/concurrencia esperada en el flujo reactivo
 - **Ubicación:** `similarproducts-application/src/test/java`
-- **Herramientas:** JUnit 5, Mockito
+- **Herramientas:** JUnit 5, Mockito, Reactor Test (`StepVerifier`)
 
 ### Task 5.3: Tests de Infrastructure (similarproducts-infrastructure-tests)
 - **Objetivo:** Validar adapters, controller, handlers
@@ -331,7 +343,7 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
     4. ProductDetailAdapter lanza excepción en 404
     5. Timeout en cliente HTTP maneja error
 - **Ubicación:** `similarproducts-infrastructure/src/test/java`
-- **Herramientas:** MockMvc, JUnit 5, WireMock/MockServer
+- **Herramientas:** `WebTestClient`, JUnit 5, WireMock/MockServer
 
 ### Task 5.4: Coverage mínimo por módulo
 - **Objetivo:** Garantizar cobertura de tests en cada módulo
@@ -391,6 +403,8 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
 - **Criterios:**
   - Respuesta <2s en percentil 95
   - No más de 5% de errores bajo 100 usuarios
+  - Validar que el throughput se mantiene estable bajo fan-out de llamadas a detalle
+  - Observar que no haya degradación severa por bloqueo de hilos ni agotamiento del pool de conexiones
 
 ---
 
@@ -419,8 +433,9 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
     - Cómo agregar nuevos adapters
   - **Decisiones técnicas:**
     - Por qué multimodulo
-    - Por qué RestTemplate vs WebClient
+    - Por qué WebFlux/WebClient vs stack bloqueante
     - Manejo de timeouts
+    - Estrategia de concurrencia acotada hacia downstream
     - Estrategia de error handling
     - Separación de concerns por módulo
   - **Contacto/Contribuciones**
@@ -474,9 +489,16 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
 - **Validación:** `mvn dependency:tree` debe mostrar jerarquía clara
 
 ### 1. Cliente HTTP
-- **Opción 1 (Recomendado):** `RestTemplate` - Simple, synchronous, bien integrado
-- **Opción 2:** `WebClient` - Async, reactive, mejor performance pero más complejo
-- **Decision:** Usar `RestTemplate` inicialmente, migrar a `WebClient` si performance es crítica
+- **Opción elegida:** `WebClient` + Spring WebFlux
+- **Motivo:** Este endpoint hace fan-out a múltiples llamadas HTTP externas por request; el modelo non-blocking reduce bloqueo de hilos y escala mejor bajo alta concurrencia
+- **Decision:** Diseñar desde el inicio una cadena reactiva end-to-end para no tener que migrar más tarde desde un stack bloqueante
+
+### 1.1. Diseño reactivo y concurrencia
+- **Puertos reactivos:** `Flux<String>` para similares y `Mono<Product>` para detalle
+- **Use case reactivo:** preservar el modelo non-blocking desde controller hasta adapters
+- **Concurrencia controlada:** paralelizar obtención de detalle, pero con límite explícito para no saturar el servicio externo
+- **Orden:** si el contrato exige respetar orden de IDs similares, usar `flatMapSequential` o estrategia equivalente
+- **Evitar:** llamadas a `.block()` dentro del flujo principal
 
 ### 2. Manejo de IDs de Producto
 - **Validación:** ¿Numérico, string, formato específico?
@@ -493,6 +515,7 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
 - **Básico:** Logs en adapters (INFO en inicio, DEBUG en detalles)
 - **Avanzado:** Correlation ID para rastrear flujo completo
 - **Tool:** SLF4J + Logback (ya viene con Spring Boot)
+- **Extra en reactivo:** propagar correlation ID de forma compatible con Reactor Context si se implementa tracing
 
 ### 5. Versionado de API
 - **No requerido** en enunciado, pero buena práctica
@@ -507,6 +530,7 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
 - **Regla:** Solo lo necesario, cuidar transitive dependencies
 - **Audit:** `mvn dependency:tree` para revisar
 - **Avoid:** Conflictos de versiones, librerías obsoletas
+- **Nota:** evitar mezclar innecesariamente `spring-boot-starter-web` y `spring-boot-starter-webflux`; priorizar un stack consistente
 
 ---
 
@@ -541,6 +565,8 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
 - [ ] Tests por módulo pasan: `mvn -pl similarproducts-domain test` (etc)
 - [ ] Coverage >80% agregado en lógica crítica
 - [ ] Tests E2E pasan contra mocks: `docker-compose up -d simulado && mvn verify`
+- [ ] Stack HTTP reactivo configurado con `WebFlux`/`WebClient`, sin bloqueos accidentales en el flujo principal
+- [ ] Concurrencia de llamadas downstream limitada y validada bajo carga
 - [ ] Docker build funciona: `docker build -t similarproducts .` y `docker-compose up`
 - [ ] README actualizado con instrucciones de multimodulo
 - [ ] README documenta responsabilidad de cada módulo
@@ -575,7 +601,7 @@ Implementar con tests unitarios/funcionales, SwaggerUI, Docker, manejo de excepc
 - [ ] **Adapters OUT** - HTTP clients, repositorios, APIs externas
 - [ ] **Isolado de business logic** - Solo técnica, sin reglas de negocio
 - [ ] **Implementa puertos del domain** - Resuelve abstracciones
-- **Verificación:** Cambiar adapter HTTP de RestTemplate a WebClient NO toca domain/application
+- **Verificación:** Ajustar configuración de `WebClient` o Reactor Netty NO debe requerir cambios en reglas de negocio
 
 ### ✅ Boot Module (similarproducts-boot)
 - [ ] **Punto de entrada único** - Main class + application.yml
