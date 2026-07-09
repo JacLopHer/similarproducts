@@ -6,8 +6,8 @@ import com.example.similarproducts.domain.model.SimilarProductsRequest;
 import com.example.similarproducts.domain.model.SimilarProductsResponse;
 import com.example.similarproducts.domain.port.ProductDetailPort;
 import com.example.similarproducts.domain.port.SimilarIdsPort;
-import java.util.List;
 import java.util.Objects;
+import reactor.core.publisher.Mono;
 
 public class GetSimilarProductsUseCase {
 
@@ -19,23 +19,17 @@ public class GetSimilarProductsUseCase {
         this.productDetailPort = Objects.requireNonNull(productDetailPort, "productDetailPort is required");
     }
 
-    public SimilarProductsResponse execute(SimilarProductsRequest request) {
+    public Mono<SimilarProductsResponse> execute(SimilarProductsRequest request) {
         validateRequest(request);
 
-        List<String> similarIds = similarIdsPort.getSimilarIds(request.productId());
-        if (similarIds == null || similarIds.isEmpty()) {
-            return new SimilarProductsResponse(List.of());
-        }
-
-        List<Product> products = similarIds.stream()
+        return similarIdsPort.getSimilarIds(request.productId())
             .filter(Objects::nonNull)
             .map(String::trim)
             .filter(id -> !id.isEmpty())
             .distinct()
-            .map(productDetailPort::getProductDetail)
-            .toList();
-
-        return new SimilarProductsResponse(products);
+            .flatMapSequential(productDetailPort::getProductDetail)
+            .collectList()
+            .map(SimilarProductsResponse::new);
     }
 
     private void validateRequest(SimilarProductsRequest request) {

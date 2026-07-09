@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 @Component
 public class SimilarIdsAdapter implements SimilarIdsPort {
@@ -27,14 +29,18 @@ public class SimilarIdsAdapter implements SimilarIdsPort {
     }
 
     @Override
-    public List<String> getSimilarIds(String productId) {
-        String url = baseUrl + similarIdsEndpoint.replace("{productId}", productId);
-        try {
-            String[] response = restTemplate.getForObject(url, String[].class);
-            return response == null ? List.of() : Arrays.asList(response);
-        } catch (HttpClientErrorException.NotFound ex) {
-            throw new ProductNotFoundException("Product not found: " + productId);
-        }
+    public Flux<String> getSimilarIds(String productId) {
+        return Flux.defer(() -> {
+                String url = baseUrl + similarIdsEndpoint.replace("{productId}", productId);
+                try {
+                    String[] response = restTemplate.getForObject(url, String[].class);
+                    List<String> similarIds = response == null ? List.of() : Arrays.asList(response);
+                    return Flux.fromIterable(similarIds);
+                } catch (HttpClientErrorException.NotFound ex) {
+                    return Flux.error(new ProductNotFoundException("Product not found: " + productId));
+                }
+            })
+            .subscribeOn(Schedulers.boundedElastic());
     }
 }
 

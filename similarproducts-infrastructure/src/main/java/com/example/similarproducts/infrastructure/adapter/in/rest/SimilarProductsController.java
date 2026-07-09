@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/product")
@@ -23,8 +24,9 @@ public class SimilarProductsController {
     }
 
     @GetMapping("/{productId}/similar")
-    public ResponseEntity<List<ProductDetailDto>> getSimilarProducts(@PathVariable @NotBlank String productId) {
-        return ResponseEntity.ok(getSimilarProductsService.getSimilarProducts(productId).products());
+    public Mono<ResponseEntity<List<ProductDetailDto>>> getSimilarProducts(@PathVariable @NotBlank String productId) {
+        return getSimilarProductsService.getSimilarProducts(productId)
+            .map(response -> ResponseEntity.ok(response.products()));
     }
 }
 

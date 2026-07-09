@@ -3,9 +3,9 @@ package com.example.similarproducts.application.service;
 import com.example.similarproducts.application.dto.SimilarProductsResponseDto;
 import com.example.similarproducts.application.mapper.ProductMapper;
 import com.example.similarproducts.domain.model.SimilarProductsRequest;
-import com.example.similarproducts.domain.model.SimilarProductsResponse;
 import com.example.similarproducts.domain.service.GetSimilarProductsUseCase;
 import java.util.Objects;
+import reactor.core.publisher.Mono;
 
 public class GetSimilarProductsService {
 
@@ -17,9 +17,9 @@ public class GetSimilarProductsService {
         this.productMapper = Objects.requireNonNull(productMapper, "productMapper is required");
     }
 
-    public SimilarProductsResponseDto getSimilarProducts(String productId) {
-        SimilarProductsResponse response = getSimilarProductsUseCase.execute(new SimilarProductsRequest(productId));
-        return productMapper.toResponseDto(response);
+    public Mono<SimilarProductsResponseDto> getSimilarProducts(String productId) {
+        return getSimilarProductsUseCase.execute(new SimilarProductsRequest(productId))
+            .map(productMapper::toResponseDto);
     }
 }
 

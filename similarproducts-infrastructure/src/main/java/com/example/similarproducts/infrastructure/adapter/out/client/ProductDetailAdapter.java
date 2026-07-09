@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Component
 public class ProductDetailAdapter implements ProductDetailPort {
@@ -31,17 +33,17 @@ public class ProductDetailAdapter implements ProductDetailPort {
     }
 
     @Override
-    public Product getProductDetail(String productId) {
-        String url = baseUrl + productDetailEndpoint.replace("{productId}", productId);
-        try {
-            ProductDetailResponse response = restTemplate.getForObject(url, ProductDetailResponse.class);
-            if (response == null) {
-                throw new ProductNotFoundException("Product not found: " + productId);
-            }
-            return adapterMapper.toDomain(response);
-        } catch (HttpClientErrorException.NotFound ex) {
-            throw new ProductNotFoundException("Product not found: " + productId);
-        }
+    public Mono<Product> getProductDetail(String productId) {
+        return Mono.fromCallable(() -> {
+                String url = baseUrl + productDetailEndpoint.replace("{productId}", productId);
+                ProductDetailResponse response = restTemplate.getForObject(url, ProductDetailResponse.class);
+                if (response == null) {
+                    throw new ProductNotFoundException("Product not found: " + productId);
+                }
+                return adapterMapper.toDomain(response);
+            })
+            .onErrorMap(HttpClientErrorException.NotFound.class, ex -> new ProductNotFoundException("Product not found: " + productId))
+            .subscribeOn(Schedulers.boundedElastic());
     }
 
     public record ProductDetailResponse(String id, String name, BigDecimal price, boolean availability) {

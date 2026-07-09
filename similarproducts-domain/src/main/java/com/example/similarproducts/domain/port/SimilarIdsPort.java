@@ -1,9 +1,12 @@
 package com.example.similarproducts.domain.port;
 
-import java.util.List;
+import reactor.core.publisher.Flux;
 
+/**
+ * Puerto reactivo para recuperar IDs de productos similares sin romper la cadena non-blocking.
+ */
 public interface SimilarIdsPort {
 
-    List<String> getSimilarIds(String productId);
+    Flux<String> getSimilarIds(String productId);
 }
 
