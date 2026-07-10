@@ -1,6 +1,7 @@
 package com.example.similarproducts.infrastructure.adapter.in.rest;
 
 import com.example.similarproducts.application.dto.ProductDetailDto;
+import com.example.similarproducts.application.dto.SimilarProductsResponseDto;
 import com.example.similarproducts.application.service.GetSimilarProductsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -60,12 +61,12 @@ public class SimilarProductsController {
             @NotBlank(message = "Product ID cannot be blank")
             @Size(max = 50, message = "Product ID must not exceed 50 characters")
             String productId) {
-        logger.info("Incoming request: GET /v1/product/{}/similar", productId);
+        logger.info("Incoming request: GET /product/{}/similar", productId);
         logger.debug("Controller - Processing request for productId: {}", productId);
 
         return ResponseEntity.ok(
             getSimilarProductsService.getSimilarProducts(productId)
-                .map(response -> response.products())
+                .map(SimilarProductsResponseDto::products)
                 .doOnSuccess(products ->
                     logger.info("Request completed successfully for productId: {} - Found {} similar products",
                         productId, products.size())
