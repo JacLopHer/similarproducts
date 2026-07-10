@@ -107,9 +107,42 @@ class GetSimilarProductsUseCaseTest {
             .hasMessage("detailConcurrency must be greater than zero");
     }
 
+    @Test
+    void shouldRejectNullRequest() {
+        SimilarIdsPort similarIdsPort = productId -> Flux.empty();
+        ProductDetailPort productDetailPort = productId -> Mono.just(product(productId));
+        GetSimilarProductsUseCase useCase = new GetSimilarProductsUseCase(similarIdsPort, productDetailPort);
+
+        assertThatThrownBy(() -> useCase.execute(null))
+            .isInstanceOf(InvalidProductIdException.class)
+            .hasMessage("productId is required");
+    }
+
+    @Test
+    void shouldRejectNullProductId() {
+        SimilarIdsPort similarIdsPort = productId -> Flux.empty();
+        ProductDetailPort productDetailPort = productId -> Mono.just(product(productId));
+        GetSimilarProductsUseCase useCase = new GetSimilarProductsUseCase(similarIdsPort, productDetailPort);
+
+        assertThatThrownBy(() -> useCase.execute(new SimilarProductsRequest(null)))
+            .isInstanceOf(InvalidProductIdException.class)
+            .hasMessage("productId is required");
+    }
+
+    @Test
+    void shouldFilterOutEmptyIdsAfterTrimming() {
+        SimilarIdsPort similarIdsPort = productId -> Flux.just("2", "   ", "", "3", "  ", "4");
+        ProductDetailPort productDetailPort = productId -> Mono.just(product(productId));
+        GetSimilarProductsUseCase useCase = new GetSimilarProductsUseCase(similarIdsPort, productDetailPort);
+
+        StepVerifier.create(useCase.execute(new SimilarProductsRequest("1")))
+            .assertNext(response -> assertThat(response.products())
+                .extracting(Product::id)
+                .containsExactly("2", "3", "4"))
+            .verifyComplete();
+    }
+
     private Product product(String productId) {
         return new Product(productId, "Product " + productId, BigDecimal.TEN, true);
     }
 }
-
-

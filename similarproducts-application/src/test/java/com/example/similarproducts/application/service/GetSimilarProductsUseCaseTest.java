@@ -340,6 +340,8 @@ class GetSimilarProductsUseCaseTest {
             () -> new GetSimilarProductsUseCase(similarIdsPortMock, null)
         );
     }
+
+
 }
 
 
