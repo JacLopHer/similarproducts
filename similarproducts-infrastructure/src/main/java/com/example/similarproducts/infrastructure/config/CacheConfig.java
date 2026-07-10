@@ -14,37 +14,28 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-/**
- * Configuración de caching con Redis para adapters OUT
- *
- * Propósito: Cachear respuestas de APIs externas con TTL de 10 minutos
- *
- * Cache stores:
- * - "similar-ids": Cachea lista de IDs similares por productId (10 minutos)
- * - "product-detail": Cachea detalles de producto por productId (10 minutos)
- */
 @Configuration
 @EnableCaching
 public class CacheConfig {
 
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
-        // Configurar serialización JSON para evitar problemas con BigDecimal y records
+        // Configure JSON serialization for BigDecimal and records
         GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer();
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
 
         RedisCacheConfiguration defaultCacheConfig = RedisCacheConfiguration.defaultCacheConfig()
-            // TTL por defecto: 10 minutos (600 segundos)
+            // Default TTL: 10 minutes (600 seconds)
             .entryTtl(Duration.ofSeconds(600))
-            // Usar JSON para serialización
+            // Use JSON for serialization
             .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(stringSerializer))
             .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
-            // No cachear valores null
+            // Do not cache null values
             .disableCachingNullValues();
 
         return RedisCacheManager.builder(redisConnectionFactory)
             .cacheDefaults(defaultCacheConfig)
-            // Cache store "similar-ids" con TTL de 10 minutos
+            // similar-ids cache: 10 minutes TTL
             .withCacheConfiguration(
                 "similar-ids",
                 RedisCacheConfiguration.defaultCacheConfig()
@@ -53,7 +44,7 @@ public class CacheConfig {
                     .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
                     .disableCachingNullValues()
             )
-            // Cache store "product-detail" con TTL de 10 minutos
+            // product-detail cache: 10 minutes TTL
             .withCacheConfiguration(
                 "product-detail",
                 RedisCacheConfiguration.defaultCacheConfig()
@@ -75,7 +66,7 @@ public class CacheConfig {
         RedisTemplate<String, List<String>> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
 
-        // Configurar serialización
+        // Configure serialization
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
         GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer();
 

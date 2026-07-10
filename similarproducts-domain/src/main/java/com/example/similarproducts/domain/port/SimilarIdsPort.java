@@ -4,8 +4,8 @@ import java.util.List;
 import reactor.core.publisher.Mono;
 
 /**
- * Puerto reactivo para recuperar IDs de productos similares sin romper la cadena non-blocking.
- * Devuelve un Mono con una lista de IDs para facilitar el caching y agregar resiliencia.
+ * Reactive port to recover IDs of similar products without breaking the non-blocking chain.
+ * Returns a Mono with a list of IDs to facilitate caching and add resilience.
  */
 public interface SimilarIdsPort {
 

@@ -4,7 +4,7 @@ import com.example.similarproducts.domain.model.Product;
 import reactor.core.publisher.Mono;
 
 /**
- * Puerto reactivo para obtener el detalle de un producto preservando una ejecución end-to-end non-blocking.
+ * Reactive port to obtain product details.
  */
 public interface ProductDetailPort {
 

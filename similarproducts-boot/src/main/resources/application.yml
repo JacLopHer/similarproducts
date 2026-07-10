@@ -30,7 +30,7 @@ spring:
   cache:
     type: redis
     redis:
-      time-to-live: 600000  # 10 minutos en ms
+      time-to-live: 600000  # 10 minutes in ms
 
 springdoc:
   swagger-ui:
@@ -41,29 +41,29 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
-# Configuración de caché
+# Cache configuration
 cache:
   ttl:
-    seconds: 600  # 10 minutos en producción por defecto
+    seconds: 600  # 10 minutes in production by default
 
-# Configuración de APIs externas con resiliencia
+# External APIs configuration with resilience
 external-api:
   base-url: ${EXTERNAL_API_BASE_URL:http://localhost:3001}
   endpoints:
     similar-ids: /product/{productId}/similarids
     product-detail: /product/{productId}
   timeout:
-    # Timeout de conexión: 5 segundos
+    # Connection timeout: 5 seconds
     connect-ms: 5000
-    # Timeout de lectura: 10 segundos
+    # Read timeout: 10 seconds
     read-ms: 10000
-  # Pool de conexiones (configurado en HttpClientConfig)
+  # Connection pool (configured in HttpClientConfig)
   connection-pool:
     max-connections: 50
     pending-acquire-max: 100
     acquire-timeout-ms: 5000
     max-idle-time-ms: 30000
-  # Reintentos
+  # Retries
   retry:
     max-attempts: 2
     retry-delay-ms: 100
@@ -90,7 +90,7 @@ logging:
 
 cache:
   ttl:
-    seconds: 300  # 5 minutos en desarrollo
+    seconds: 300  # 5 minutes in development
 
 
 ---
@@ -110,5 +110,5 @@ logging:
 
 cache:
   ttl:
-    seconds: 600  # 10 minutos en producción
+    seconds: 600  # 10 minutes in production
 
