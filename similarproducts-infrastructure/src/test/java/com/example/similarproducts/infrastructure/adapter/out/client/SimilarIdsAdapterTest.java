@@ -4,11 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.similarproducts.domain.exception.ProductNotFoundException;
 import java.time.Duration;
+import java.util.List;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -18,6 +22,7 @@ class SimilarIdsAdapterTest {
 
     private MockWebServer mockWebServer;
     private SimilarIdsAdapter adapter;
+    private RedisTemplate<String, List<String>> redisTemplate;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -28,8 +33,13 @@ class SimilarIdsAdapterTest {
             .baseUrl(mockWebServer.url("/").toString())
             .build();
 
+        // Create a mock RedisTemplate for testing
+        redisTemplate = Mockito.mock(RedisTemplate.class);
+        ValueOperations<String, List<String>> valueOps = Mockito.mock(ValueOperations.class);
+        Mockito.when(redisTemplate.opsForValue()).thenReturn(valueOps);
+
         String endpoint = mockWebServer.url("/").toString() + "product/{productId}/similarids";
-        adapter = new SimilarIdsAdapter(webClient, endpoint);
+        adapter = new SimilarIdsAdapter(webClient, endpoint, redisTemplate, 2);
     }
 
     @AfterEach
@@ -39,7 +49,7 @@ class SimilarIdsAdapterTest {
 
     @Test
     void shouldReturnSimilarIdsWhenApiReturns200WithArray() {
-        // The adapter returns each line as a separate string from bodyToFlux
+        // The adapter now returns a Mono<List> with all IDs
         String responseJson = "id1\nid2\nid3";
 
         mockWebServer.enqueue(new MockResponse()
@@ -47,7 +57,7 @@ class SimilarIdsAdapterTest {
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .setBody(responseJson));
 
-        StepVerifier.create(adapter.getSimilarIds("123").collectList())
+        StepVerifier.create(adapter.getSimilarIds("123"))
             .assertNext(ids ->
                 assertThat(ids).containsExactly("id1", "id2", "id3")
             )
@@ -89,7 +99,7 @@ class SimilarIdsAdapterTest {
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .setBody(responseJson));
 
-        StepVerifier.create(adapter.getSimilarIds("123").collectList())
+        StepVerifier.create(adapter.getSimilarIds("123"))
             .assertNext(ids ->
                 assertThat(ids).containsExactly("product-1", "product_2", "product.3", "product:4")
             )
@@ -103,7 +113,7 @@ class SimilarIdsAdapterTest {
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .setBody("id1\nid2"));
 
-        StepVerifier.create(adapter.getSimilarIds("456").collectList())
+        StepVerifier.create(adapter.getSimilarIds("456"))
             .assertNext(ids -> assertThat(ids).isNotEmpty())
             .verifyComplete();
 
@@ -123,11 +133,7 @@ class SimilarIdsAdapterTest {
             .setBody(responseJson));
 
         StepVerifier.create(adapter.getSimilarIds("123"))
-            .expectNext("a")
-            .expectNext("b")
-            .expectNext("c")
-            .expectNext("d")
-            .expectNext("e")
+            .assertNext(ids -> assertThat(ids).containsExactly("a", "b", "c", "d", "e"))
             .verifyComplete();
     }
 
@@ -162,17 +168,17 @@ class SimilarIdsAdapterTest {
             .setBody(""));
 
         // First call
-        StepVerifier.create(adapter.getSimilarIds("100").collectList())
+        StepVerifier.create(adapter.getSimilarIds("100"))
             .assertNext(ids -> assertThat(ids).hasSize(3))
             .verifyComplete();
 
         // Second call
-        StepVerifier.create(adapter.getSimilarIds("200").collectList())
+        StepVerifier.create(adapter.getSimilarIds("200"))
             .assertNext(ids -> assertThat(ids).hasSize(2))
             .verifyComplete();
 
         // Third call
-        StepVerifier.create(adapter.getSimilarIds("300").collectList())
+        StepVerifier.create(adapter.getSimilarIds("300"))
             .assertNext(ids -> assertThat(ids).isEmpty())
             .verifyComplete();
     }
@@ -186,7 +192,7 @@ class SimilarIdsAdapterTest {
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .setBody(responseJson));
 
-        StepVerifier.create(adapter.getSimilarIds("123").collectList())
+        StepVerifier.create(adapter.getSimilarIds("123"))
             .assertNext(ids ->
                 assertThat(ids).contains("product-123", "item_456", "SKU.789")
             )
@@ -202,7 +208,7 @@ class SimilarIdsAdapterTest {
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .setBody(responseJson));
 
-        StepVerifier.create(adapter.getSimilarIds("123").collectList())
+        StepVerifier.create(adapter.getSimilarIds("123"))
             .assertNext(ids ->
                 assertThat(ids).containsExactly("z", "y", "x", "w", "v")
             )
@@ -310,7 +316,7 @@ class SimilarIdsAdapterTest {
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .setBody("id1\nid2\nid3"));
 
-        StepVerifier.create(adapter.getSimilarIds("200-test").collectList())
+        StepVerifier.create(adapter.getSimilarIds("200-test"))
             .assertNext(ids ->
                 assertThat(ids).contains("id1", "id2", "id3")
             )
@@ -398,7 +404,7 @@ class SimilarIdsAdapterTest {
             .setBody("id1\nid2"));
 
         // This should succeed since the response is valid and any unmapped exceptions are passed through
-        StepVerifier.create(adapter.getSimilarIds("valid-test").collectList())
+        StepVerifier.create(adapter.getSimilarIds("valid-test"))
             .assertNext(ids ->
                 assertThat(ids).contains("id1", "id2")
             )

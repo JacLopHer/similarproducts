@@ -1,12 +1,12 @@
 package com.example.similarproducts.domain.service;
 
 import com.example.similarproducts.domain.exception.InvalidProductIdException;
-import com.example.similarproducts.domain.model.Product;
 import com.example.similarproducts.domain.model.SimilarProductsRequest;
 import com.example.similarproducts.domain.model.SimilarProductsResponse;
 import com.example.similarproducts.domain.port.ProductDetailPort;
 import com.example.similarproducts.domain.port.SimilarIdsPort;
 import java.util.Objects;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class GetSimilarProductsUseCase {
@@ -34,6 +34,7 @@ public class GetSimilarProductsUseCase {
         validateRequest(request);
 
         return similarIdsPort.getSimilarIds(request.productId())
+            .flatMapMany(Flux::fromIterable)
             .filter(Objects::nonNull)
             .map(String::trim)
             .filter(id -> !id.isEmpty())

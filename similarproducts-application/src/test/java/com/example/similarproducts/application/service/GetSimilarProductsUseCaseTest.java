@@ -14,10 +14,10 @@ import com.example.similarproducts.domain.port.ProductDetailPort;
 import com.example.similarproducts.domain.port.SimilarIdsPort;
 import com.example.similarproducts.domain.service.GetSimilarProductsUseCase;
 import java.math.BigDecimal;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -44,7 +44,7 @@ class GetSimilarProductsUseCaseTest {
         Product product3 = new Product("3", "Blazer", new BigDecimal("29.99"), false);
 
         when(similarIdsPortMock.getSimilarIds("1"))
-            .thenReturn(Flux.just("2", "3"));
+            .thenReturn(Mono.just(List.of("2", "3")));
         when(productDetailPortMock.getProductDetail("2"))
             .thenReturn(Mono.just(product2));
         when(productDetailPortMock.getProductDetail("3"))
@@ -65,7 +65,7 @@ class GetSimilarProductsUseCaseTest {
         // Arrange
         String productId = "999";
         when(similarIdsPortMock.getSimilarIds("999"))
-            .thenReturn(Flux.empty());
+            .thenReturn(Mono.just(List.of()));
 
         // Act & Assert
         StepVerifier.create(useCase.execute(new SimilarProductsRequest(productId)))
@@ -83,7 +83,7 @@ class GetSimilarProductsUseCaseTest {
         ProductNotFoundException exception = new ProductNotFoundException("Product 1 not found");
 
         when(similarIdsPortMock.getSimilarIds("1"))
-            .thenReturn(Flux.error(exception));
+            .thenReturn(Mono.error(exception));
 
         // Act & Assert
         StepVerifier.create(useCase.execute(new SimilarProductsRequest(productId)))
@@ -100,7 +100,7 @@ class GetSimilarProductsUseCaseTest {
         ProductNotFoundException exception = new ProductNotFoundException("Product 3 not found");
 
         when(similarIdsPortMock.getSimilarIds("1"))
-            .thenReturn(Flux.just("2", "3"));
+            .thenReturn(Mono.just(List.of("2", "3")));
         when(productDetailPortMock.getProductDetail("2"))
             .thenReturn(Mono.just(product2));
         when(productDetailPortMock.getProductDetail("3"))
@@ -120,7 +120,7 @@ class GetSimilarProductsUseCaseTest {
         Product product2 = new Product("2", "Dress", new BigDecimal("19.99"), true);
 
         when(similarIdsPortMock.getSimilarIds("1"))
-            .thenReturn(Flux.just("2", "2", "2"));
+            .thenReturn(Mono.just(List.of("2", "2", "2")));
         when(productDetailPortMock.getProductDetail("2"))
             .thenReturn(Mono.just(product2));
 
@@ -175,7 +175,7 @@ class GetSimilarProductsUseCaseTest {
 
         // Use concat to simulate receiving a null-like value between valid IDs
         when(similarIdsPortMock.getSimilarIds("1"))
-            .thenReturn(Flux.just("2").concatWith(Flux.empty()).concatWith(Flux.just("2")));
+            .thenReturn(Mono.just(List.of("2", "2")));
         when(productDetailPortMock.getProductDetail("2"))
             .thenReturn(Mono.just(product2));
 
@@ -197,7 +197,7 @@ class GetSimilarProductsUseCaseTest {
         Product product3 = new Product("3", "Product 3", new BigDecimal("30.00"), false);
 
         when(similarIdsPortMock.getSimilarIds("1"))
-            .thenReturn(Flux.just("2", "", " ", "3"));
+            .thenReturn(Mono.just(List.of("2", "", " ", "3")));
         when(productDetailPortMock.getProductDetail("2"))
             .thenReturn(Mono.just(product2));
         when(productDetailPortMock.getProductDetail("3"))
@@ -225,7 +225,7 @@ class GetSimilarProductsUseCaseTest {
         Product product1 = new Product("1", "Product 1", new BigDecimal("10.00"), true);
 
         when(similarIdsPortMock.getSimilarIds("1"))
-            .thenReturn(Flux.just("3", "2", "1"));
+            .thenReturn(Mono.just(List.of("3", "2", "1")));
         when(productDetailPortMock.getProductDetail("3"))
             .thenReturn(Mono.just(product3));
         when(productDetailPortMock.getProductDetail("2"))
@@ -253,7 +253,7 @@ class GetSimilarProductsUseCaseTest {
         Product product4 = new Product("4", "Product 4", new BigDecimal("40.00"), true);
 
         when(similarIdsPortMock.getSimilarIds("1"))
-            .thenReturn(Flux.just("2", "3", "4"));
+            .thenReturn(Mono.just(List.of("2", "3", "4")));
         when(productDetailPortMock.getProductDetail("2"))
             .thenReturn(Mono.just(product2));
         when(productDetailPortMock.getProductDetail("3"))
@@ -283,7 +283,7 @@ class GetSimilarProductsUseCaseTest {
         Product product2 = new Product("2", "Product 2", new BigDecimal("20.00"), true);
 
         when(similarIdsPortMock.getSimilarIds("1"))
-            .thenReturn(Flux.just("  2  "));
+            .thenReturn(Mono.just(List.of("  2  ")));
         when(productDetailPortMock.getProductDetail("2"))
             .thenReturn(Mono.just(product2));
 

@@ -14,7 +14,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -22,7 +21,7 @@ class GetSimilarProductsUseCaseTest {
 
     @Test
     void shouldReturnProductsInOriginalOrderWhileRemovingDuplicateIds() {
-        SimilarIdsPort similarIdsPort = productId -> Flux.just("2", " 3 ", "2", "4");
+        SimilarIdsPort similarIdsPort = productId -> Mono.just(List.of("2", " 3 ", "2", "4"));
         ProductDetailPort productDetailPort = productId -> Mono.just(product(productId));
         GetSimilarProductsUseCase useCase = new GetSimilarProductsUseCase(similarIdsPort, productDetailPort, 2);
 
@@ -35,7 +34,7 @@ class GetSimilarProductsUseCaseTest {
 
     @Test
     void shouldReturnEmptyResponseWhenNoSimilarIdsExist() {
-        SimilarIdsPort similarIdsPort = productId -> Flux.empty();
+        SimilarIdsPort similarIdsPort = productId -> Mono.just(List.of());
         ProductDetailPort productDetailPort = productId -> Mono.just(product(productId));
         GetSimilarProductsUseCase useCase = new GetSimilarProductsUseCase(similarIdsPort, productDetailPort);
 
@@ -46,7 +45,7 @@ class GetSimilarProductsUseCaseTest {
 
     @Test
     void shouldPropagateProductNotFoundWhenDetailLookupFails() {
-        SimilarIdsPort similarIdsPort = productId -> Flux.just("2", "3");
+        SimilarIdsPort similarIdsPort = productId -> Mono.just(List.of("2", "3"));
         ProductDetailPort productDetailPort = productId -> "3".equals(productId)
             ? Mono.error(new ProductNotFoundException("Product 3 not found"))
             : Mono.just(product(productId));
@@ -65,7 +64,7 @@ class GetSimilarProductsUseCaseTest {
         AtomicInteger inFlight = new AtomicInteger();
         AtomicInteger maxInFlight = new AtomicInteger();
 
-        SimilarIdsPort similarIdsPort = productId -> Flux.fromIterable(List.of("2", "3", "4", "5", "6"));
+        SimilarIdsPort similarIdsPort = productId -> Mono.just(List.of("2", "3", "4", "5", "6"));
         ProductDetailPort productDetailPort = productId -> Mono.defer(() -> {
             int current = inFlight.incrementAndGet();
             maxInFlight.accumulateAndGet(current, Math::max);
@@ -88,7 +87,7 @@ class GetSimilarProductsUseCaseTest {
 
     @Test
     void shouldRejectBlankProductId() {
-        SimilarIdsPort similarIdsPort = productId -> Flux.empty();
+        SimilarIdsPort similarIdsPort = productId -> Mono.just(List.of());
         ProductDetailPort productDetailPort = productId -> Mono.just(product(productId));
         GetSimilarProductsUseCase useCase = new GetSimilarProductsUseCase(similarIdsPort, productDetailPort);
 
@@ -99,7 +98,7 @@ class GetSimilarProductsUseCaseTest {
 
     @Test
     void shouldRejectNonPositiveConcurrency() {
-        SimilarIdsPort similarIdsPort = productId -> Flux.empty();
+        SimilarIdsPort similarIdsPort = productId -> Mono.just(List.of());
         ProductDetailPort productDetailPort = productId -> Mono.just(product(productId));
 
         assertThatThrownBy(() -> new GetSimilarProductsUseCase(similarIdsPort, productDetailPort, 0))
@@ -109,7 +108,7 @@ class GetSimilarProductsUseCaseTest {
 
     @Test
     void shouldRejectNullRequest() {
-        SimilarIdsPort similarIdsPort = productId -> Flux.empty();
+        SimilarIdsPort similarIdsPort = productId -> Mono.just(List.of());
         ProductDetailPort productDetailPort = productId -> Mono.just(product(productId));
         GetSimilarProductsUseCase useCase = new GetSimilarProductsUseCase(similarIdsPort, productDetailPort);
 
@@ -120,7 +119,7 @@ class GetSimilarProductsUseCaseTest {
 
     @Test
     void shouldRejectNullProductId() {
-        SimilarIdsPort similarIdsPort = productId -> Flux.empty();
+        SimilarIdsPort similarIdsPort = productId -> Mono.just(List.of());
         ProductDetailPort productDetailPort = productId -> Mono.just(product(productId));
         GetSimilarProductsUseCase useCase = new GetSimilarProductsUseCase(similarIdsPort, productDetailPort);
 
@@ -131,7 +130,7 @@ class GetSimilarProductsUseCaseTest {
 
     @Test
     void shouldFilterOutEmptyIdsAfterTrimming() {
-        SimilarIdsPort similarIdsPort = productId -> Flux.just("2", "   ", "", "3", "  ", "4");
+        SimilarIdsPort similarIdsPort = productId -> Mono.just(List.of("2", "   ", "", "3", "  ", "4"));
         ProductDetailPort productDetailPort = productId -> Mono.just(product(productId));
         GetSimilarProductsUseCase useCase = new GetSimilarProductsUseCase(similarIdsPort, productDetailPort);
 

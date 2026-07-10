@@ -6,6 +6,19 @@ spring:
     name: similarproducts
   profiles:
     active: dev
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 5000
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000  # 10 minutos en ms
 
 springdoc:
   swagger-ui:
@@ -15,6 +28,11 @@ springdoc:
     tags-sorter: alpha
   api-docs:
     path: /v3/api-docs
+
+# Configuración de caché
+cache:
+  ttl:
+    seconds: 600  # 10 minutos en producción por defecto
 
 # Configuración de APIs externas con resiliencia
 external-api:
@@ -53,18 +71,10 @@ logging:
   pattern:
     console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
----
-spring:
-  config:
-    activate:
-      on-profile: test
+cache:
+  ttl:
+    seconds: 300  # 5 minutos en desarrollo
 
-logging:
-  level:
-    root: WARN
-    com.example.similarproducts: INFO
-    org.springframework.web.reactive.function.client: WARN
-    reactor.netty.http.client: WARN
 
 ---
 spring:
@@ -80,4 +90,8 @@ logging:
     reactor.netty.http.client: WARN
   pattern:
     console: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"
+
+cache:
+  ttl:
+    seconds: 600  # 10 minutos en producción
 

@@ -22,6 +22,19 @@ services:
     networks:
       - similarproducts-net
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - similarproducts-net
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  redis_data:
+
 networks:
   similarproducts-net:
     driver: bridge

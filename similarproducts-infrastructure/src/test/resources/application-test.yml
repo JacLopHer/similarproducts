@@ -1,0 +1,15 @@
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+cache:
+  ttl:
+    seconds: 2
+
+external-api:
+  base-url: http://localhost:9999
+  endpoints:
+    similar-ids: /product/{productId}/similarids
+

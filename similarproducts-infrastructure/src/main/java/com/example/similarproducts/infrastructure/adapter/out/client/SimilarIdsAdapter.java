@@ -3,14 +3,16 @@ package com.example.similarproducts.infrastructure.adapter.out.client;
 import com.example.similarproducts.domain.exception.ProductNotFoundException;
 import com.example.similarproducts.domain.port.SimilarIdsPort;
 import java.net.ConnectException;
+import java.time.Duration;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.PrematureCloseException;
 import reactor.util.retry.Retry;
@@ -22,20 +24,65 @@ public class SimilarIdsAdapter implements SimilarIdsPort {
 
     private static final int MAX_RETRIES = 2;
     private static final long RETRY_DELAY_MS = 100;
+    private static final String CACHE_KEY_PREFIX = "similar-ids:";
 
     private final WebClient webClient;
     private final String similarIdsEndpoint;
+    private final RedisTemplate<String, List<String>> redisTemplate;
+    private final long cacheTtlSeconds;
 
     public SimilarIdsAdapter(
         WebClient webClient,
-        @Value("${external-api.endpoints.similar-ids}") String similarIdsEndpoint
+        @Value("${external-api.base-url}${external-api.endpoints.similar-ids}") String similarIdsEndpoint,
+        RedisTemplate<String, List<String>> redisTemplate,
+        @Value("${cache.ttl.seconds:600}") long cacheTtlSeconds
     ) {
         this.webClient = webClient;
         this.similarIdsEndpoint = similarIdsEndpoint;
+        this.redisTemplate = redisTemplate;
+        this.cacheTtlSeconds = cacheTtlSeconds;
     }
 
     @Override
-    public Flux<String> getSimilarIds(String productId) {
+    public Mono<List<String>> getSimilarIds(String productId) {
+        String cacheKey = CACHE_KEY_PREFIX + productId;
+
+        // Intenta leer del cache
+        return Mono.fromCallable(() -> redisTemplate.opsForValue().get(cacheKey))
+            .flatMap(cachedValue -> {
+                if (cachedValue != null) {
+                    logger.debug("Cache HIT: similar-ids:{}", productId);
+                    return Mono.just(cachedValue);
+                }
+                // Cache miss - fetch from API
+                return fetchFromAPI(productId)
+                    .doOnNext(result -> {
+                        logger.debug("Caching result for: {}", productId);
+                        try {
+                            redisTemplate.opsForValue().set(cacheKey, result,
+                                Duration.ofSeconds(cacheTtlSeconds));
+                        } catch (Exception e) {
+                            logger.warn("Failed to cache result for {}: {}", productId, e.getMessage());
+                        }
+                    });
+            })
+            .switchIfEmpty(fetchFromAPI(productId)
+                .doOnNext(result -> {
+                    logger.debug("Caching result for: {} (from switchIfEmpty)", productId);
+                    try {
+                        redisTemplate.opsForValue().set(cacheKey, result,
+                                Duration.ofSeconds(cacheTtlSeconds));
+                    } catch (Exception e) {
+                        logger.warn("Failed to cache result for {}: {}", productId, e.getMessage());
+                    }
+                }));
+    }
+
+    /**
+     * Fetch similar IDs from external API without caching
+     */
+    private Mono<List<String>> fetchFromAPI(String productId) {
+        logger.debug("Cache MISS: similar-ids:{}, fetching from API", productId);
         String url = similarIdsEndpoint.replace("{productId}", productId);
         logger.info("Fetching similar IDs for productId: {} from URL: {}", productId, url);
 
@@ -60,7 +107,8 @@ public class SimilarIdsAdapter implements SimilarIdsPort {
             .retryWhen(retryPolicy())
             .onErrorMap(WebClientResponseException.NotFound.class,
                 ex -> new ProductNotFoundException("Product not found: " + productId))
-            .onErrorMap(this::mapNetworkException);
+            .onErrorMap(this::mapNetworkException)
+            .collectList();
     }
 
     /**
