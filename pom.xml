@@ -137,7 +137,32 @@
                                 <goal>report</goal>
                             </goals>
                         </execution>
+                        <execution>
+                            <id>report-aggregate</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>report-aggregate</goal>
+                            </goals>
+                        </execution>
                     </executions>
+                    <configuration>
+                        <excludes>
+                            <!-- Excluir clases de configuración Spring (infrastructure pura) -->
+                            <exclude>**/SwaggerConfig.class</exclude>
+                            <exclude>**/HttpClientConfig.class</exclude>
+                            <exclude>**/InfrastructureConfig.class</exclude>
+                            <exclude>**/ApplicationConfig.class</exclude>
+                            <exclude>**/BootConfig.class</exclude>
+                            <!-- Excluir DTOs de respuesta (estructuras de datos Lombok) -->
+                            <exclude>**/ErrorResponse.class</exclude>
+                            <exclude>**/ProductDetailDto.class</exclude>
+                            <exclude>**/SimilarProductsResponseDto.class</exclude>
+                            <!-- Excluir clases de aplicación main -->
+                            <exclude>**/SimilarProductsApplication.class</exclude>
+                            <!-- Excluir clases generadas por Lombok (inner classes) -->
+                            <exclude>**/*$*.class</exclude>
+                        </excludes>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
