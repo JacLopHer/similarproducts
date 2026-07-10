@@ -6,6 +6,18 @@ spring:
     name: similarproducts
   profiles:
     active: dev
+
+  reactor:
+    debug-agent:
+      enabled: true
+    netty:
+      resources:
+        max-threads: 200
+        max-connections: 100
+      pool:
+        max-connections: 100
+        acquire-timeout: 5000ms
+        max-idle-time: 30000ms
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -36,7 +48,7 @@ cache:
 
 # Configuración de APIs externas con resiliencia
 external-api:
-  base-url: http://localhost:3001
+  base-url: ${EXTERNAL_API_BASE_URL:http://localhost:3001}
   endpoints:
     similar-ids: /product/{productId}/similarids
     product-detail: /product/{productId}
@@ -61,6 +73,10 @@ spring:
   config:
     activate:
       on-profile: dev
+  
+  reactor:
+    debug-agent:
+      enabled: true
 
 logging:
   level:
@@ -68,6 +84,7 @@ logging:
     com.example.similarproducts: DEBUG
     org.springframework.web.reactive.function.client: DEBUG
     reactor.netty.http.client: DEBUG
+    reactor: DEBUG
   pattern:
     console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 

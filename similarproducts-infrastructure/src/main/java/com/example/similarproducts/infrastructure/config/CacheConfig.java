@@ -11,6 +11,7 @@ import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
@@ -28,10 +29,17 @@ public class CacheConfig {
 
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
+        // Configurar serialización JSON para evitar problemas con BigDecimal y records
+        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer();
+        StringRedisSerializer stringSerializer = new StringRedisSerializer();
+
         RedisCacheConfiguration defaultCacheConfig = RedisCacheConfiguration.defaultCacheConfig()
             // TTL por defecto: 10 minutos (600 segundos)
             .entryTtl(Duration.ofSeconds(600))
-            // Usar valores por defecto para serialización (JSON)
+            // Usar JSON para serialización
+            .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(stringSerializer))
+            .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
+            // No cachear valores null
             .disableCachingNullValues();
 
         return RedisCacheManager.builder(redisConnectionFactory)
@@ -41,6 +49,8 @@ public class CacheConfig {
                 "similar-ids",
                 RedisCacheConfiguration.defaultCacheConfig()
                     .entryTtl(Duration.ofSeconds(600))
+                    .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(stringSerializer))
+                    .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
                     .disableCachingNullValues()
             )
             // Cache store "product-detail" con TTL de 10 minutos
@@ -48,6 +58,8 @@ public class CacheConfig {
                 "product-detail",
                 RedisCacheConfiguration.defaultCacheConfig()
                     .entryTtl(Duration.ofSeconds(600))
+                    .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(stringSerializer))
+                    .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
                     .disableCachingNullValues()
             )
             .build();

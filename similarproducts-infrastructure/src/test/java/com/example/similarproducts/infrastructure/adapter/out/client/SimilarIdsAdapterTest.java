@@ -40,7 +40,7 @@ class SimilarIdsAdapterTest {
     @Test
     void shouldReturnSimilarIdsWhenApiReturns200WithArray() {
         // The adapter now returns a Mono<List> with all IDs
-        String responseJson = "id1\nid2\nid3";
+        String responseJson = "[\"id1\",\"id2\",\"id3\"]";
 
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
@@ -83,7 +83,7 @@ class SimilarIdsAdapterTest {
 
     @Test
     void shouldReturnSimilarIdsWithVariousFormats() {
-        String responseJson = "product-1\nproduct_2\nproduct.3\nproduct:4";
+        String responseJson = "[\"product-1\",\"product_2\",\"product.3\",\"product:4\"]";
 
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
@@ -102,7 +102,7 @@ class SimilarIdsAdapterTest {
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .setBody("id1\nid2"));
+            .setBody("[\"id1\",\"id2\"]"));
 
         StepVerifier.create(adapter.getSimilarIds("456"))
             .assertNext(ids -> assertThat(ids).isNotEmpty())
@@ -116,7 +116,7 @@ class SimilarIdsAdapterTest {
 
     @Test
     void shouldStreamIdsIndividuallyAsFlux() {
-        String responseJson = "a\nb\nc\nd\ne";
+        String responseJson = "[\"a\",\"b\",\"c\",\"d\",\"e\"]";
 
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
@@ -146,17 +146,17 @@ class SimilarIdsAdapterTest {
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .setBody("1\n2\n3"));
+            .setBody("[\"1\",\"2\",\"3\"]"));
 
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .setBody("4\n5"));
+            .setBody("[\"4\",\"5\"]"));
 
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .setBody(""));
+            .setBody("[]"));
 
         // First call
         StepVerifier.create(adapter.getSimilarIds("100"))
@@ -176,7 +176,7 @@ class SimilarIdsAdapterTest {
 
     @Test
     void shouldReturnSimilarIdsWithSpecialCharacters() {
-        String responseJson = "product-123\nitem_456\nSKU.789";
+        String responseJson = "[\"product-123\",\"item_456\",\"SKU.789\"]";
 
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
@@ -192,7 +192,7 @@ class SimilarIdsAdapterTest {
 
     @Test
     void shouldPreserveSimilarIdsOrder() {
-        String responseJson = "z\ny\nx\nw\nv";
+        String responseJson = "[\"z\",\"y\",\"x\",\"w\",\"v\"]";
 
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
@@ -305,7 +305,7 @@ class SimilarIdsAdapterTest {
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .setBody("id1\nid2\nid3"));
+            .setBody("[\"id1\",\"id2\",\"id3\"]"));
 
         StepVerifier.create(adapter.getSimilarIds("200-test"))
             .assertNext(ids ->
@@ -392,7 +392,7 @@ class SimilarIdsAdapterTest {
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .setBody("id1\nid2"));
+            .setBody("[\"id1\",\"id2\"]"));
 
         // This should succeed since the response is valid and any unmapped exceptions are passed through
         StepVerifier.create(adapter.getSimilarIds("valid-test"))
@@ -411,7 +411,7 @@ class SimilarIdsAdapterTest {
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .setBody("result1"));
+            .setBody("[\"result1\"]"));
 
         StepVerifier.create(adapter.getSimilarIds("test-mapped-exception")
                 .timeout(Duration.ofSeconds(5)))

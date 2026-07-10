@@ -5,13 +5,11 @@ import com.example.similarproducts.domain.port.SimilarIdsPort;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -55,8 +53,8 @@ public class SimilarIdsAdapter implements SimilarIdsPort {
                     logger.error("External API server error");
                     return Mono.error(new RuntimeException("External API server error"));
                 })
-                .bodyToMono(String.class)
-                .map(this::parseIds)
+                .bodyToMono(new ParameterizedTypeReference<List<String>>() {})
+                .doOnNext(ids -> logger.debug("Retrieved similar IDs: {} for productId: {}", ids, productId))
                 .timeout(Duration.ofSeconds(10))
                 .doOnSubscribe(s -> logger.debug("Calling external API for similar IDs: {}", productId))
                 .retryWhen(Retry.backoff(MAX_RETRIES, Duration.ofMillis(RETRY_DELAY_MS))
@@ -65,16 +63,6 @@ public class SimilarIdsAdapter implements SimilarIdsPort {
                 .onErrorResume(ProductNotFoundException.class, Mono::error)
                 .onErrorResume(this::mapNetworkException)
                 .defaultIfEmpty(List.of());
-    }
-
-    private List<String> parseIds(String responseBody) {
-        if (responseBody == null || responseBody.isBlank()) {
-            return new ArrayList<>();
-        }
-        return Arrays.stream(responseBody.split("\n"))
-                .map(String::trim)
-                .filter(id -> !id.isEmpty())
-                .collect(Collectors.toList());
     }
 
     private boolean isRetryable(Throwable throwable) {

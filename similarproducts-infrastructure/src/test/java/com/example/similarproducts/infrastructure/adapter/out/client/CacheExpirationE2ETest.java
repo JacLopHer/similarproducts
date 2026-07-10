@@ -81,13 +81,13 @@ class CacheExpirationE2ETest {
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .setBody("product-1\nproduct-2"));
+            .setBody("[\"product-1\",\"product-2\"]"));
 
         // Enqueue second response for after cache expiration
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .setBody("product-1\nproduct-2\nproduct-3"));
+            .setBody("[\"product-1\",\"product-2\",\"product-3\"]"));
 
         StepVerifier.create(adapter.getSimilarIds("456"))
             .assertNext(ids -> assertThat(ids).containsExactly("product-1", "product-2"))
@@ -115,12 +115,12 @@ class CacheExpirationE2ETest {
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .setBody("a\nb"));
+                .setBody("[\"a\",\"b\"]"));
 
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .setBody("c\nd"));
+                .setBody("[\"c\",\"d\"]"));
 
         // First call to productId "111"
         StepVerifier.create(adapter.getSimilarIds("111").timeout(Duration.ofSeconds(15)))
