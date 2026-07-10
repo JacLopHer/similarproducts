@@ -10,11 +10,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.server.ServerWebExchange;
 
 /**
  * Global exception handler for consistent error handling across the API.
  * Intercepts exceptions thrown from controllers and maps them to appropriate HTTP responses.
+ * Compatible with Spring WebFlux (reactive).
  *
  * <p>Handles:
  * <ul>
@@ -34,22 +35,22 @@ public class GlobalExceptionHandler {
      * Returns 404 Not Found with error details.
      *
      * @param ex the ProductNotFoundException
-     * @param request the WebRequest context
+     * @param exchange the ServerWebExchange context
      * @return ResponseEntity with 404 status and error details
      */
     @ExceptionHandler(ProductNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleProductNotFound(
-        ProductNotFoundException ex,
-        WebRequest request) {
-        String uri = request.getDescription(false).replace("uri=", "");
+            ProductNotFoundException ex,
+            ServerWebExchange exchange) {
+        String uri = exchange.getRequest().getURI().toString();
         logger.warn("ProductNotFoundException - URI: {}, Message: {}", uri, ex.getMessage());
         logger.debug("ProductNotFoundException - Full trace available in application logs");
 
         return buildErrorResponse(
-            HttpStatus.NOT_FOUND,
-            "PRODUCT_NOT_FOUND",
-            ex.getMessage(),
-            request);
+                HttpStatus.NOT_FOUND,
+                "PRODUCT_NOT_FOUND",
+                ex.getMessage(),
+                uri);
     }
 
     /**
@@ -57,26 +58,26 @@ public class GlobalExceptionHandler {
      * Returns 400 Bad Request with validation error details.
      *
      * @param ex the exception (either InvalidProductIdException or ConstraintViolationException)
-     * @param request the WebRequest context
+     * @param exchange the ServerWebExchange context
      * @return ResponseEntity with 400 status and validation error details
      */
     @ExceptionHandler({InvalidProductIdException.class, ConstraintViolationException.class})
     public ResponseEntity<ErrorResponse> handleBadRequest(
-        Exception ex,
-        WebRequest request) {
-        String errorCode = ex instanceof InvalidProductIdException 
-            ? "INVALID_PRODUCT_ID" 
-            : "VALIDATION_ERROR";
-        String uri = request.getDescription(false).replace("uri=", "");
-        logger.warn("BadRequest ({})) - URI: {}, Error: {}, Message: {}",
-            errorCode, uri, ex.getClass().getSimpleName(), ex.getMessage());
+            Exception ex,
+            ServerWebExchange exchange) {
+        String errorCode = ex instanceof InvalidProductIdException
+                ? "INVALID_PRODUCT_ID"
+                : "VALIDATION_ERROR";
+        String uri = exchange.getRequest().getURI().toString();
+        logger.warn("BadRequest ({}) - URI: {}, Error: {}, Message: {}",
+                errorCode, uri, ex.getClass().getSimpleName(), ex.getMessage());
         logger.debug("BadRequest - Full exception: ", ex);
 
         return buildErrorResponse(
-            HttpStatus.BAD_REQUEST,
-            errorCode,
-            ex.getMessage(),
-            request);
+                HttpStatus.BAD_REQUEST,
+                errorCode,
+                ex.getMessage(),
+                uri);
     }
 
     /**
@@ -84,23 +85,23 @@ public class GlobalExceptionHandler {
      * Returns 500 Internal Server Error.
      *
      * @param ex the unexpected exception
-     * @param request the WebRequest context
+     * @param exchange the ServerWebExchange context
      * @return ResponseEntity with 500 status and generic error message
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(
-        Exception ex,
-        WebRequest request) {
-        String uri = request.getDescription(false).replace("uri=", "");
+            Exception ex,
+            ServerWebExchange exchange) {
+        String uri = exchange.getRequest().getURI().toString();
         logger.error("Unexpected error - URI: {}, Exception: {}, Message: {}",
-            uri, ex.getClass().getSimpleName(), ex.getMessage());
+                uri, ex.getClass().getSimpleName(), ex.getMessage());
         logger.debug("Full stack trace for debugging:", ex);
 
         return buildErrorResponse(
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            "INTERNAL_SERVER_ERROR",
-            "An unexpected error occurred. Please contact support.",
-            request);
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "INTERNAL_SERVER_ERROR",
+                "An unexpected error occurred. Please contact support.",
+                uri);
     }
 
     /**
@@ -109,20 +110,19 @@ public class GlobalExceptionHandler {
      * @param status HTTP status code
      * @param errorCode Error identifier
      * @param message Human-readable error message
-     * @param request the WebRequest context
+     * @param uri the request URI
      * @return ResponseEntity with error details
      */
     private ResponseEntity<ErrorResponse> buildErrorResponse(
-        HttpStatus status,
-        String errorCode,
-        String message,
-        WebRequest request) {
+            HttpStatus status,
+            String errorCode,
+            String message,
+            String uri) {
         ErrorResponse errorResponse = ErrorResponse.of(
-            errorCode,
-            message,
-            request.getDescription(false).replace("uri=", ""),
-            status.value());
+                errorCode,
+                message,
+                uri,
+                status.value());
         return ResponseEntity.status(status).body(errorResponse);
     }
 }
-

@@ -11,6 +11,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
+
+import jakarta.validation.constraints.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +28,7 @@ import reactor.core.publisher.Mono;
  * Exposes reactive endpoints to obtain similar products through WebFlux.
  */
 @RestController
-@RequestMapping("/product")
+@RequestMapping("/v1/product")
 @Validated
 @Tag(name = "Similar Products", description = "API to retrieve similar products")
 public class SimilarProductsController {
@@ -52,12 +54,13 @@ public class SimilarProductsController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public Mono<ResponseEntity<List<ProductDetailDto>>> getSimilarProducts(
-            @PathVariable 
+            @PathVariable
             @Parameter(description = "Unique product ID to retrieve similar products for",
                     required = true, example = "1")
             @NotBlank(message = "Product ID cannot be blank")
+            @Size(max = 50, message = "Product ID must not exceed 50 characters")
             String productId) {
-        logger.info("Incoming request: GET /product/{}/similar", productId);
+        logger.info("Incoming request: GET /v1/product/{}/similar", productId);
         logger.debug("Controller - Processing request for productId: {}", productId);
 
         return getSimilarProductsService.getSimilarProducts(productId)

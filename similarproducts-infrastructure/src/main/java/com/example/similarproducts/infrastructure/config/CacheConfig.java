@@ -1,6 +1,7 @@
 package com.example.similarproducts.infrastructure.config;
 
 import java.time.Duration;
+import java.util.List;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -8,6 +9,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
  * Configuración de caching con Redis para adapters OUT
@@ -22,14 +26,6 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 @EnableCaching
 public class CacheConfig {
 
-    /**
-     * Configurar Redis como CacheManager con TTL por defecto de 10 minutos (600 segundos)
-     *
-     * Beneficios:
-     * - Cachea automáticamente respuestas de APIs externas
-     * - Reduce latencia en múltiples llamadas del mismo producto
-     * - Expira automáticamente sin invalidación manual
-     */
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
         RedisCacheConfiguration defaultCacheConfig = RedisCacheConfiguration.defaultCacheConfig()
@@ -55,6 +51,33 @@ public class CacheConfig {
                     .disableCachingNullValues()
             )
             .build();
+    }
+
+    /**
+     * Bean de RedisTemplate para operaciones directas con Redis
+     * Utilizado por los adapters OUT (SimilarIdsAdapter, ProductDetailAdapter)
+     * para cachear manualmente respuestas de APIs externas
+     */
+    @Bean
+    public RedisTemplate<String, List<String>> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, List<String>> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory);
+
+        // Configurar serialización
+        StringRedisSerializer stringSerializer = new StringRedisSerializer();
+        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer();
+
+        // Keys: String
+        template.setKeySerializer(stringSerializer);
+        // Values: JSON
+        template.setValueSerializer(jsonSerializer);
+        // Hash keys: String
+        template.setHashKeySerializer(stringSerializer);
+        // Hash values: JSON
+        template.setHashValueSerializer(jsonSerializer);
+
+        template.afterPropertiesSet();
+        return template;
     }
 }
 

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.server.ServerWebExchange;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -23,19 +23,25 @@ class GlobalExceptionHandlerTest {
 
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
-    private WebRequest createMockRequest(String path) {
-        WebRequest request = mock(WebRequest.class);
-        when(request.getDescription(false)).thenReturn("uri=" + path);
-        return request;
+    private ServerWebExchange createMockExchange(String path) {
+        ServerWebExchange exchange = mock(ServerWebExchange.class);
+        var request = mock(org.springframework.http.server.reactive.ServerHttpRequest.class);
+        var uri = mock(java.net.URI.class);
+
+        when(exchange.getRequest()).thenReturn(request);
+        when(request.getURI()).thenReturn(uri);
+        when(uri.toString()).thenReturn(path);
+
+        return exchange;
     }
 
     @Test
     @DisplayName("Should map ProductNotFoundException to 404")
     void handleProductNotFound_Returns404() {
         ProductNotFoundException ex = new ProductNotFoundException("Product with id 999 not found");
-        WebRequest request = createMockRequest("/product/999/similar");
+        ServerWebExchange exchange = createMockExchange("/product/999/similar");
 
-        ResponseEntity<ErrorResponse> response = handler.handleProductNotFound(ex, request);
+        ResponseEntity<ErrorResponse> response = handler.handleProductNotFound(ex, exchange);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -50,9 +56,9 @@ class GlobalExceptionHandlerTest {
     @DisplayName("Should map InvalidProductIdException to 400")
     void handleInvalidProductId_Returns400() {
         InvalidProductIdException ex = new InvalidProductIdException("Invalid product ID format");
-        WebRequest request = createMockRequest("/product/invalid/similar");
+        ServerWebExchange exchange = createMockExchange("/product/invalid/similar");
 
-        ResponseEntity<ErrorResponse> response = handler.handleBadRequest(ex, request);
+        ResponseEntity<ErrorResponse> response = handler.handleBadRequest(ex, exchange);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -67,9 +73,9 @@ class GlobalExceptionHandlerTest {
     void handleConstraintViolation_Returns400() {
         ConstraintViolationException ex = mock(ConstraintViolationException.class);
         when(ex.getMessage()).thenReturn("Validation failed");
-        WebRequest request = createMockRequest("/product//similar");
+        ServerWebExchange exchange = createMockExchange("/product//similar");
 
-        ResponseEntity<ErrorResponse> response = handler.handleBadRequest(ex, request);
+        ResponseEntity<ErrorResponse> response = handler.handleBadRequest(ex, exchange);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -81,9 +87,9 @@ class GlobalExceptionHandlerTest {
     @DisplayName("Should map generic Exception to 500")
     void handleUnexpectedException_Returns500() {
         RuntimeException ex = new RuntimeException("Database connection lost");
-        WebRequest request = createMockRequest("/product/1/similar");
+        ServerWebExchange exchange = createMockExchange("/product/1/similar");
 
-        ResponseEntity<ErrorResponse> response = handler.handleUnexpected(ex, request);
+        ResponseEntity<ErrorResponse> response = handler.handleUnexpected(ex, exchange);
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -97,9 +103,9 @@ class GlobalExceptionHandlerTest {
     @DisplayName("ErrorResponse should always include path and status")
     void errorResponse_IncludesPathAndStatus() {
         ProductNotFoundException ex = new ProductNotFoundException("Not found");
-        WebRequest request = createMockRequest("/product/test/similar");
+        ServerWebExchange exchange = createMockExchange("/product/test/similar");
 
-        ResponseEntity<ErrorResponse> response = handler.handleProductNotFound(ex, request);
+        ResponseEntity<ErrorResponse> response = handler.handleProductNotFound(ex, exchange);
 
         assertNotNull(response.getBody().path());
         assertTrue(response.getBody().path().contains("/product/test/similar"));
@@ -110,12 +116,11 @@ class GlobalExceptionHandlerTest {
     @DisplayName("ErrorResponse should have non-null timestamp")
     void errorResponse_HasTimestamp() {
         InvalidProductIdException ex = new InvalidProductIdException("Invalid");
-        WebRequest request = createMockRequest("/product/test/similar");
+        ServerWebExchange exchange = createMockExchange("/product/test/similar");
 
-        ResponseEntity<ErrorResponse> response = handler.handleBadRequest(ex, request);
+        ResponseEntity<ErrorResponse> response = handler.handleBadRequest(ex, exchange);
 
         assertNotNull(response.getBody().timestamp());
         assertNotNull(response.getBody().message());
     }
 }
-

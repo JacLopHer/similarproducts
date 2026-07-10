@@ -2,158 +2,100 @@ package com.example.similarproducts.infrastructure.adapter.out.client;
 
 import com.example.similarproducts.domain.exception.ProductNotFoundException;
 import com.example.similarproducts.domain.port.SimilarIdsPort;
+import java.io.IOException;
 import java.net.ConnectException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
-import reactor.netty.http.client.PrematureCloseException;
 import reactor.util.retry.Retry;
 
 @Component
 public class SimilarIdsAdapter implements SimilarIdsPort {
 
     private static final Logger logger = LoggerFactory.getLogger(SimilarIdsAdapter.class);
-
-    private static final int MAX_RETRIES = 2;
+    private static final int MAX_RETRIES = 3;
     private static final long RETRY_DELAY_MS = 100;
-    private static final String CACHE_KEY_PREFIX = "similar-ids:";
 
     private final WebClient webClient;
     private final String similarIdsEndpoint;
-    private final RedisTemplate<String, List<String>> redisTemplate;
-    private final long cacheTtlSeconds;
 
     public SimilarIdsAdapter(
         WebClient webClient,
-        @Value("${external-api.base-url}${external-api.endpoints.similar-ids}") String similarIdsEndpoint,
-        RedisTemplate<String, List<String>> redisTemplate,
-        @Value("${cache.ttl.seconds:600}") long cacheTtlSeconds
+        @Value("${external-api.base-url}${external-api.endpoints.similar-ids}") String similarIdsEndpoint
     ) {
         this.webClient = webClient;
         this.similarIdsEndpoint = similarIdsEndpoint;
-        this.redisTemplate = redisTemplate;
-        this.cacheTtlSeconds = cacheTtlSeconds;
     }
 
     @Override
     public Mono<List<String>> getSimilarIds(String productId) {
-        String cacheKey = CACHE_KEY_PREFIX + productId;
+        if (productId == null || productId.isBlank()) {
+            return Mono.just(List.of());
+        }
 
-        // Intenta leer del cache
-        return Mono.fromCallable(() -> redisTemplate.opsForValue().get(cacheKey))
-            .flatMap(cachedValue -> {
-                if (cachedValue != null) {
-                    logger.debug("Cache HIT: similar-ids:{}", productId);
-                    return Mono.just(cachedValue);
-                }
-                // Cache miss - fetch from API
-                return fetchFromAPI(productId)
-                    .doOnNext(result -> {
-                        logger.debug("Caching result for: {}", productId);
-                        try {
-                            redisTemplate.opsForValue().set(cacheKey, result,
-                                Duration.ofSeconds(cacheTtlSeconds));
-                        } catch (Exception e) {
-                            logger.warn("Failed to cache result for {}: {}", productId, e.getMessage());
-                        }
-                    });
-            })
-            .switchIfEmpty(fetchFromAPI(productId)
-                .doOnNext(result -> {
-                    logger.debug("Caching result for: {} (from switchIfEmpty)", productId);
-                    try {
-                        redisTemplate.opsForValue().set(cacheKey, result,
-                                Duration.ofSeconds(cacheTtlSeconds));
-                    } catch (Exception e) {
-                        logger.warn("Failed to cache result for {}: {}", productId, e.getMessage());
-                    }
-                }));
-    }
-
-    /**
-     * Fetch similar IDs from external API without caching
-     */
-    private Mono<List<String>> fetchFromAPI(String productId) {
-        logger.debug("Cache MISS: similar-ids:{}, fetching from API", productId);
-        String url = similarIdsEndpoint.replace("{productId}", productId);
-        logger.info("Fetching similar IDs for productId: {} from URL: {}", productId, url);
+        logger.debug("Fetching similar IDs for productId: {}", productId);
 
         return webClient.get()
-            .uri(url)
-            .retrieve()
-            .onStatus(status -> status.value() == 404,
-                response -> {
-                    logger.warn("Product not found (404) for productId: {}", productId);
+                .uri(similarIdsEndpoint, productId)
+                .retrieve()
+                .onStatus(status -> status.value() == 404, clientResponse -> {
+                    logger.warn("Product not found: {}", productId);
                     return Mono.error(new ProductNotFoundException("Product not found: " + productId));
                 })
-            .onStatus(HttpStatusCode::is5xxServerError,
-                response -> {
-                    logger.error("Server error (5xx) fetching similar IDs for productId: {} - Status: {}",
-                        productId, response.statusCode());
-                    return Mono.error(new RuntimeException("External API server error: " + response.statusCode()));
+                .onStatus(status -> status.is5xxServerError(), clientResponse -> {
+                    logger.error("External API server error");
+                    return Mono.error(new RuntimeException("External API server error"));
                 })
-            .bodyToFlux(String.class)
-            .doOnNext(id -> logger.debug("Retrieved similar ID: {} for productId: {}", id, productId))
-            .doOnError(throwable -> logger.error("Error fetching similar IDs for productId {}: {}",
-                productId, throwable.getClass().getSimpleName() + " - " + throwable.getMessage()))
-            .retryWhen(retryPolicy())
-            .onErrorMap(WebClientResponseException.NotFound.class,
-                ex -> new ProductNotFoundException("Product not found: " + productId))
-            .onErrorMap(this::mapNetworkException)
-            .collectList();
+                .bodyToMono(String.class)
+                .map(this::parseIds)
+                .timeout(Duration.ofSeconds(10))
+                .doOnSubscribe(s -> logger.debug("Calling external API for similar IDs: {}", productId))
+                .retryWhen(Retry.backoff(MAX_RETRIES, Duration.ofMillis(RETRY_DELAY_MS))
+                        .filter(this::isRetryable)
+                        .doBeforeRetry(retrySignal -> logger.debug("Retrying getSimilarIds for productId: {}, attempt: {}", productId, retrySignal.totalRetries() + 1)))
+                .onErrorResume(ProductNotFoundException.class, Mono::error)
+                .onErrorResume(this::mapNetworkException)
+                .defaultIfEmpty(List.of());
     }
 
-    /**
-     * Política de reintentos adaptada a excepciones transitorias
-     */
-    private Retry retryPolicy() {
-        return Retry.backoff(MAX_RETRIES, java.time.Duration.ofMillis(RETRY_DELAY_MS))
-            .filter(this::isRetryableException)
-            .doBeforeRetry(signal ->
-                logger.warn("Retrying (attempt {}/{}) due to: {}",
-                    signal.totalRetries() + 1,
-                    MAX_RETRIES,
-                    signal.failure().getClass().getSimpleName())
-            )
-            .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> {
-                logger.error("Max retries ({}) exhausted for similar IDs request. Last error: {}",
-                    MAX_RETRIES, retrySignal.failure().getMessage());
-                return retrySignal.failure();
-            });
-    }
-
-    /**
-     * Determina si una excepción es reintentable (transitorias)
-     */
-    private boolean isRetryableException(Throwable throwable) {
-        return throwable instanceof java.io.IOException ||
-                (throwable instanceof WebClientResponseException &&
-                        ((WebClientResponseException) throwable).getStatusCode().is5xxServerError());
-    }
-
-    /**
-     * Mapea excepciones de red a excepciones de dominio apropiadas
-     */
-    private Throwable mapNetworkException(Throwable throwable) {
-        if (throwable instanceof java.net.SocketTimeoutException) {
-            logger.error("Socket timeout fetching similar IDs: {}", throwable.getMessage());
-            return new RuntimeException("External API timeout: connection took too long", throwable);
-        } else if (throwable instanceof ConnectException) {
-            logger.error("Connection refused fetching similar IDs: {}", throwable.getMessage());
-            return new RuntimeException("External API unavailable: connection refused", throwable);
-        } else if (throwable instanceof PrematureCloseException) {
-            logger.error("Connection closed prematurely fetching similar IDs: {}", throwable.getMessage());
-            return new RuntimeException("External API connection closed prematurely", throwable);
+    private List<String> parseIds(String responseBody) {
+        if (responseBody == null || responseBody.isBlank()) {
+            return new ArrayList<>();
         }
-        return throwable;
+        return Arrays.stream(responseBody.split("\n"))
+                .map(String::trim)
+                .filter(id -> !id.isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    private boolean isRetryable(Throwable throwable) {
+        if (throwable instanceof WebClientResponseException.InternalServerError
+                || throwable instanceof WebClientResponseException.ServiceUnavailable
+                || throwable instanceof WebClientResponseException.BadGateway) {
+            return true;
+        }
+        if (throwable instanceof IOException
+                || throwable instanceof ConnectException
+                || throwable.getMessage() != null && throwable.getMessage().contains("timeout")) {
+            return true;
+        }
+        return false;
+    }
+
+    private <T> Mono<T> mapNetworkException(Throwable throwable) {
+        if (throwable instanceof IOException || throwable instanceof ConnectException) {
+            return Mono.error(new RuntimeException("Network error: " + throwable.getMessage(), throwable));
+        }
+        return Mono.error(throwable);
     }
 }
 

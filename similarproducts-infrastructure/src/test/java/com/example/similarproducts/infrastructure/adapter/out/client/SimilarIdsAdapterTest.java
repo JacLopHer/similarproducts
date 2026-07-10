@@ -4,15 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.similarproducts.domain.exception.ProductNotFoundException;
 import java.time.Duration;
-import java.util.List;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -22,7 +18,6 @@ class SimilarIdsAdapterTest {
 
     private MockWebServer mockWebServer;
     private SimilarIdsAdapter adapter;
-    private RedisTemplate<String, List<String>> redisTemplate;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -33,13 +28,8 @@ class SimilarIdsAdapterTest {
             .baseUrl(mockWebServer.url("/").toString())
             .build();
 
-        // Create a mock RedisTemplate for testing
-        redisTemplate = Mockito.mock(RedisTemplate.class);
-        ValueOperations<String, List<String>> valueOps = Mockito.mock(ValueOperations.class);
-        Mockito.when(redisTemplate.opsForValue()).thenReturn(valueOps);
-
         String endpoint = mockWebServer.url("/").toString() + "product/{productId}/similarids";
-        adapter = new SimilarIdsAdapter(webClient, endpoint, redisTemplate, 2);
+        adapter = new SimilarIdsAdapter(webClient, endpoint);
     }
 
     @AfterEach

@@ -54,3 +54,4 @@ Feature: Similar Products API - Test de Flujo Principal
     Then status 400
     And match response == { error: '#string', message: '#string', timestamp: '#string' }
 
+
