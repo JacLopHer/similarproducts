@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
 /**
  * Global exception handler for consistent error handling across the API.
@@ -36,10 +37,10 @@ public class GlobalExceptionHandler {
      *
      * @param ex the ProductNotFoundException
      * @param exchange the ServerWebExchange context
-     * @return ResponseEntity with 404 status and error details
+     * @return ResponseEntity with Mono body containing 404 status and error details
      */
     @ExceptionHandler(ProductNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleProductNotFound(
+    public ResponseEntity<Mono<ErrorResponse>> handleProductNotFound(
             ProductNotFoundException ex,
             ServerWebExchange exchange) {
         String uri = exchange.getRequest().getURI().toString();
@@ -59,10 +60,10 @@ public class GlobalExceptionHandler {
      *
      * @param ex the exception (either InvalidProductIdException or ConstraintViolationException)
      * @param exchange the ServerWebExchange context
-     * @return ResponseEntity with 400 status and validation error details
+     * @return ResponseEntity with Mono body containing 400 status and validation error details
      */
     @ExceptionHandler({InvalidProductIdException.class, ConstraintViolationException.class})
-    public ResponseEntity<ErrorResponse> handleBadRequest(
+    public ResponseEntity<Mono<ErrorResponse>> handleBadRequest(
             Exception ex,
             ServerWebExchange exchange) {
         String errorCode = ex instanceof InvalidProductIdException
@@ -86,10 +87,10 @@ public class GlobalExceptionHandler {
      *
      * @param ex the unexpected exception
      * @param exchange the ServerWebExchange context
-     * @return ResponseEntity with 500 status and generic error message
+     * @return ResponseEntity with Mono body containing 500 status and generic error message
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleUnexpected(
+    public ResponseEntity<Mono<ErrorResponse>> handleUnexpected(
             Exception ex,
             ServerWebExchange exchange) {
         String uri = exchange.getRequest().getURI().toString();
@@ -105,15 +106,15 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Builds a structured error response.
+     * Builds a structured error response (Reactive version).
      *
      * @param status HTTP status code
      * @param errorCode Error identifier
      * @param message Human-readable error message
      * @param uri the request URI
-     * @return ResponseEntity with error details
+     * @return ResponseEntity with Mono body containing error details
      */
-    private ResponseEntity<ErrorResponse> buildErrorResponse(
+    private ResponseEntity<Mono<ErrorResponse>> buildErrorResponse(
             HttpStatus status,
             String errorCode,
             String message,
@@ -123,6 +124,6 @@ public class GlobalExceptionHandler {
                 message,
                 uri,
                 status.value());
-        return ResponseEntity.status(status).body(errorResponse);
+        return ResponseEntity.status(status).body(Mono.just(errorResponse));
     }
 }

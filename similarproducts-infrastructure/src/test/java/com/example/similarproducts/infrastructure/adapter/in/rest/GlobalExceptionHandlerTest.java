@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -41,15 +42,16 @@ class GlobalExceptionHandlerTest {
         ProductNotFoundException ex = new ProductNotFoundException("Product with id 999 not found");
         ServerWebExchange exchange = createMockExchange("/product/999/similar");
 
-        ResponseEntity<ErrorResponse> response = handler.handleProductNotFound(ex, exchange);
+        ResponseEntity<Mono<ErrorResponse>> responseEntity = handler.handleProductNotFound(ex, exchange);
+        ErrorResponse response = responseEntity.getBody().block();
 
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals("PRODUCT_NOT_FOUND", response.getBody().error());
-        assertEquals("Product with id 999 not found", response.getBody().message());
-        assertEquals(404, response.getBody().status());
-        assertNotNull(response.getBody().timestamp());
-        assertTrue(response.getBody().path().contains("/product/999/similar"));
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+        assertNotNull(response);
+        assertEquals("PRODUCT_NOT_FOUND", response.error());
+        assertEquals("Product with id 999 not found", response.message());
+        assertEquals(404, response.status());
+        assertNotNull(response.timestamp());
+        assertTrue(response.path().contains("/product/999/similar"));
     }
 
     @Test
@@ -58,14 +60,15 @@ class GlobalExceptionHandlerTest {
         InvalidProductIdException ex = new InvalidProductIdException("Invalid product ID format");
         ServerWebExchange exchange = createMockExchange("/product/invalid/similar");
 
-        ResponseEntity<ErrorResponse> response = handler.handleBadRequest(ex, exchange);
+        ResponseEntity<Mono<ErrorResponse>> responseEntity = handler.handleBadRequest(ex, exchange);
+        ErrorResponse response = responseEntity.getBody().block();
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals("INVALID_PRODUCT_ID", response.getBody().error());
-        assertEquals("Invalid product ID format", response.getBody().message());
-        assertEquals(400, response.getBody().status());
-        assertNotNull(response.getBody().timestamp());
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertNotNull(response);
+        assertEquals("INVALID_PRODUCT_ID", response.error());
+        assertEquals("Invalid product ID format", response.message());
+        assertEquals(400, response.status());
+        assertNotNull(response.timestamp());
     }
 
     @Test
@@ -75,12 +78,13 @@ class GlobalExceptionHandlerTest {
         when(ex.getMessage()).thenReturn("Validation failed");
         ServerWebExchange exchange = createMockExchange("/product//similar");
 
-        ResponseEntity<ErrorResponse> response = handler.handleBadRequest(ex, exchange);
+        ResponseEntity<Mono<ErrorResponse>> responseEntity = handler.handleBadRequest(ex, exchange);
+        ErrorResponse response = responseEntity.getBody().block();
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals("VALIDATION_ERROR", response.getBody().error());
-        assertEquals(400, response.getBody().status());
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertNotNull(response);
+        assertEquals("VALIDATION_ERROR", response.error());
+        assertEquals(400, response.status());
     }
 
     @Test
@@ -89,14 +93,15 @@ class GlobalExceptionHandlerTest {
         RuntimeException ex = new RuntimeException("Database connection lost");
         ServerWebExchange exchange = createMockExchange("/product/1/similar");
 
-        ResponseEntity<ErrorResponse> response = handler.handleUnexpected(ex, exchange);
+        ResponseEntity<Mono<ErrorResponse>> responseEntity = handler.handleUnexpected(ex, exchange);
+        ErrorResponse response = responseEntity.getBody().block();
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals("INTERNAL_SERVER_ERROR", response.getBody().error());
-        assertTrue(response.getBody().message().contains("unexpected"));
-        assertEquals(500, response.getBody().status());
-        assertNotNull(response.getBody().timestamp());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, responseEntity.getStatusCode());
+        assertNotNull(response);
+        assertEquals("INTERNAL_SERVER_ERROR", response.error());
+        assertTrue(response.message().contains("unexpected"));
+        assertEquals(500, response.status());
+        assertNotNull(response.timestamp());
     }
 
     @Test
@@ -105,11 +110,12 @@ class GlobalExceptionHandlerTest {
         ProductNotFoundException ex = new ProductNotFoundException("Not found");
         ServerWebExchange exchange = createMockExchange("/product/test/similar");
 
-        ResponseEntity<ErrorResponse> response = handler.handleProductNotFound(ex, exchange);
+        ResponseEntity<Mono<ErrorResponse>> responseEntity = handler.handleProductNotFound(ex, exchange);
+        ErrorResponse response = responseEntity.getBody().block();
 
-        assertNotNull(response.getBody().path());
-        assertTrue(response.getBody().path().contains("/product/test/similar"));
-        assertEquals(404, response.getBody().status());
+        assertNotNull(response.path());
+        assertTrue(response.path().contains("/product/test/similar"));
+        assertEquals(404, response.status());
     }
 
     @Test
@@ -118,9 +124,11 @@ class GlobalExceptionHandlerTest {
         InvalidProductIdException ex = new InvalidProductIdException("Invalid");
         ServerWebExchange exchange = createMockExchange("/product/test/similar");
 
-        ResponseEntity<ErrorResponse> response = handler.handleBadRequest(ex, exchange);
+        ResponseEntity<Mono<ErrorResponse>> responseEntity = handler.handleBadRequest(ex, exchange);
+        ErrorResponse response = responseEntity.getBody().block();
 
-        assertNotNull(response.getBody().timestamp());
-        assertNotNull(response.getBody().message());
+        assertNotNull(response);
+        assertNotNull(response.timestamp());
+        assertNotNull(response.message());
     }
 }

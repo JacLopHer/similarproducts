@@ -54,16 +54,16 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.just(responseDto));
 
         // Act & Assert
-        StepVerifier.create(controller.getSimilarProducts(productId))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity = controller.getSimilarProducts(productId);
+        StepVerifier.create(responseEntity.getBody())
             .assertNext(response -> {
-                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                assertThat(response.getBody()).isNotNull();
-                assertThat(response.getBody()).hasSize(2);
-                assertThat(response.getBody().get(0).id()).isEqualTo("2");
-                assertThat(response.getBody().get(1).id()).isEqualTo("3");
+                assertThat(response).hasSize(2);
+                assertThat(response.get(0).id()).isEqualTo("2");
+                assertThat(response.get(1).id()).isEqualTo("3");
             })
             .verifyComplete();
 
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         verify(serviceMock, times(1)).getSimilarProducts(productId);
     }
 
@@ -78,14 +78,15 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.just(emptyResponse));
 
         // Act & Assert
-        StepVerifier.create(controller.getSimilarProducts(productId))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity = controller.getSimilarProducts(productId);
+        StepVerifier.create(responseEntity.getBody())
             .assertNext(response -> {
-                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                assertThat(response.getBody()).isNotNull();
-                assertThat(response.getBody()).isEmpty();
+                assertThat(response).isNotNull();
+                assertThat(response).isEmpty();
             })
             .verifyComplete();
 
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         verify(serviceMock, times(1)).getSimilarProducts(productId);
     }
 
@@ -100,7 +101,8 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.error(exception));
 
         // Act & Assert
-        StepVerifier.create(controller.getSimilarProducts(productId))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity = controller.getSimilarProducts(productId);
+        StepVerifier.create(responseEntity.getBody())
             .expectError(ProductNotFoundException.class)
             .verify();
 
@@ -118,7 +120,8 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.error(exception));
 
         // Act & Assert
-        StepVerifier.create(controller.getSimilarProducts(productId))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity = controller.getSimilarProducts(productId);
+        StepVerifier.create(responseEntity.getBody())
             .expectError(InvalidProductIdException.class)
             .verify();
 
@@ -136,7 +139,8 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.error(exception));
 
         // Act & Assert
-        StepVerifier.create(controller.getSimilarProducts(productId))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity = controller.getSimilarProducts(productId);
+        StepVerifier.create(responseEntity.getBody())
             .expectError(RuntimeException.class)
             .verify();
 
@@ -159,9 +163,10 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.just(responseDto));
 
         // Act & Assert
-        StepVerifier.create(controller.getSimilarProducts(productId))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity = controller.getSimilarProducts(productId);
+        StepVerifier.create(responseEntity.getBody())
             .assertNext(response -> {
-                List<ProductDetailDto> products = response.getBody();
+                List<ProductDetailDto> products = response;
                 assertThat(products).hasSize(3);
                 assertThat(products.get(0).name()).isEqualTo("Product A");
                 assertThat(products.get(1).name()).isEqualTo("Product B");
@@ -184,10 +189,11 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.just(responseDto));
 
         // Act & Assert
-        StepVerifier.create(controller.getSimilarProducts(productId))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity = controller.getSimilarProducts(productId);
+        StepVerifier.create(responseEntity.getBody())
             .assertNext(response -> {
-                assertThat(response.getBody()).isNotNull();
-                assertThat(response.getBody()).containsExactly(product);
+                assertThat(response).isNotNull();
+                assertThat(response).containsExactly(product);
             })
             .verifyComplete();
     }
@@ -209,12 +215,14 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.just(response2));
 
         // Act & Assert
-        StepVerifier.create(controller.getSimilarProducts(productId1))
-            .assertNext(response -> assertThat(response.getBody().get(0).id()).isEqualTo("11"))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity1 = controller.getSimilarProducts(productId1);
+        StepVerifier.create(responseEntity1.getBody())
+            .assertNext(response -> assertThat(response.get(0).id()).isEqualTo("11"))
             .verifyComplete();
 
-        StepVerifier.create(controller.getSimilarProducts(productId2))
-            .assertNext(response -> assertThat(response.getBody().get(0).id()).isEqualTo("21"))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity2 = controller.getSimilarProducts(productId2);
+        StepVerifier.create(responseEntity2.getBody())
+            .assertNext(response -> assertThat(response.get(0).id()).isEqualTo("21"))
             .verifyComplete();
 
         verify(serviceMock, times(1)).getSimilarProducts(productId1);
@@ -233,12 +241,13 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.just(responseDto));
 
         // Act
-        Mono<ResponseEntity<List<ProductDetailDto>>> mono = controller.getSimilarProducts(productId);
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity = controller.getSimilarProducts(productId);
 
-        // Assert - Verify it's still a Mono (not subscribed)
-        assertThat(mono).isNotNull();
+        // Assert - Verify it's still a ResponseEntity with Mono (not subscribed)
+        assertThat(responseEntity).isNotNull();
+        assertThat(responseEntity.getBody()).isNotNull();
 
-        StepVerifier.create(mono)
+        StepVerifier.create(responseEntity.getBody())
             .expectNextCount(1)
             .verifyComplete();
 
@@ -256,7 +265,7 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.just(responseDto));
 
         // Act
-        controller.getSimilarProducts(productId).block();
+        controller.getSimilarProducts(productId).getBody().block();
 
         // Assert
         verify(serviceMock, times(1)).getSimilarProducts("specific-id-123");
@@ -278,13 +287,14 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.just(responseDto));
 
         // Act & Assert
-        StepVerifier.create(controller.getSimilarProducts(productId))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity = controller.getSimilarProducts(productId);
+        StepVerifier.create(responseEntity.getBody())
             .assertNext(response -> {
-                assertThat(response.getBody()).hasSize(100);
-                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(response).hasSize(100);
             })
             .verifyComplete();
 
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         verify(serviceMock, times(1)).getSimilarProducts(productId);
     }
 
@@ -305,9 +315,10 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.just(responseDto));
 
         // Act & Assert
-        StepVerifier.create(controller.getSimilarProducts(productId))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity = controller.getSimilarProducts(productId);
+        StepVerifier.create(responseEntity.getBody())
             .assertNext(response -> {
-                ProductDetailDto responseProduct = response.getBody().get(0);
+                ProductDetailDto responseProduct = response.get(0);
                 assertThat(responseProduct.id()).isEqualTo("detail-id");
                 assertThat(responseProduct.name()).isEqualTo("Detailed Product");
                 assertThat(responseProduct.price()).isEqualTo(new BigDecimal("123.45"));
@@ -327,7 +338,8 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.error(timeoutException));
 
         // Act & Assert
-        StepVerifier.create(controller.getSimilarProducts(productId))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity = controller.getSimilarProducts(productId);
+        StepVerifier.create(responseEntity.getBody())
             .expectError(Exception.class)
             .verify();
 
@@ -346,10 +358,11 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.just(responseDto));
 
         // Act & Assert
-        StepVerifier.create(controller.getSimilarProducts(productId))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity = controller.getSimilarProducts(productId);
+        StepVerifier.create(responseEntity.getBody())
             .assertNext(response -> {
-                assertThat(response.getBody()).isNotNull();
-                assertThat(response.getBody()).isEmpty();
+                assertThat(response).isNotNull();
+                assertThat(response).isEmpty();
             })
             .verifyComplete();
     }
@@ -367,9 +380,12 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.just(responseDto));
 
         // Act & Assert
-        StepVerifier.create(controller.getSimilarProducts(productId))
-            .assertNext(response -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity = controller.getSimilarProducts(productId);
+        StepVerifier.create(responseEntity.getBody())
+            .expectNextCount(1)
             .verifyComplete();
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Test
@@ -384,13 +400,15 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.just(responseDto));
 
         // Act & Assert
-        StepVerifier.create(controller.getSimilarProducts(productId))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity = controller.getSimilarProducts(productId);
+        StepVerifier.create(responseEntity.getBody())
             .assertNext(response -> {
-                assertThat(response).isInstanceOf(ResponseEntity.class);
-                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                assertThat(response.getBody()).isInstanceOf(List.class);
+                assertThat(response).isInstanceOf(List.class);
             })
             .verifyComplete();
+
+        assertThat(responseEntity).isInstanceOf(ResponseEntity.class);
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Test
@@ -420,13 +438,15 @@ class SimilarProductsControllerTest {
             .thenReturn(Mono.just(response2));
 
         // Act & Assert - First call
-        StepVerifier.create(controller.getSimilarProducts(productId))
-            .assertNext(response -> assertThat(response.getBody().get(0).name()).isEqualTo("Product 1"))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity1 = controller.getSimilarProducts(productId);
+        StepVerifier.create(responseEntity1.getBody())
+            .assertNext(response -> assertThat(response.get(0).name()).isEqualTo("Product 1"))
             .verifyComplete();
 
         // Second call
-        StepVerifier.create(controller.getSimilarProducts(productId))
-            .assertNext(response -> assertThat(response.getBody().get(0).name()).isEqualTo("Product 2"))
+        ResponseEntity<Mono<List<ProductDetailDto>>> responseEntity2 = controller.getSimilarProducts(productId);
+        StepVerifier.create(responseEntity2.getBody())
+            .assertNext(response -> assertThat(response.get(0).name()).isEqualTo("Product 2"))
             .verifyComplete();
 
         verify(serviceMock, times(2)).getSimilarProducts(productId);

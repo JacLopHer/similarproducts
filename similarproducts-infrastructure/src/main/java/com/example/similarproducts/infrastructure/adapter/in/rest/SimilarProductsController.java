@@ -53,7 +53,7 @@ public class SimilarProductsController {
         @ApiResponse(responseCode = "404", description = "Product not found"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public Mono<ResponseEntity<List<ProductDetailDto>>> getSimilarProducts(
+    public ResponseEntity<Mono<List<ProductDetailDto>>> getSimilarProducts(
             @PathVariable
             @Parameter(description = "Unique product ID to retrieve similar products for",
                     required = true, example = "1")
@@ -63,15 +63,17 @@ public class SimilarProductsController {
         logger.info("Incoming request: GET /v1/product/{}/similar", productId);
         logger.debug("Controller - Processing request for productId: {}", productId);
 
-        return getSimilarProductsService.getSimilarProducts(productId)
-            .map(response -> ResponseEntity.ok(response.products()))
-            .doOnSuccess(response ->
-                logger.info("Request completed successfully for productId: {} - Found {} similar products",
-                    productId, response.getBody() != null ? response.getBody().size() : 0)
-            )
-            .doOnError(error -> logger.error("Request failed for productId: {} - Error: {}",
-                productId, error.getClass().getSimpleName()))
-            .doFinally(signalType -> logger.debug("Controller - Request processing finished for productId: {}", productId));
+        return ResponseEntity.ok(
+            getSimilarProductsService.getSimilarProducts(productId)
+                .map(response -> response.products())
+                .doOnSuccess(products ->
+                    logger.info("Request completed successfully for productId: {} - Found {} similar products",
+                        productId, products.size())
+                )
+                .doOnError(error -> logger.error("Request failed for productId: {} - Error: {}",
+                    productId, error.getClass().getSimpleName()))
+                .doFinally(signalType -> logger.debug("Controller - Request processing finished for productId: {}", productId))
+        );
     }
 }
 
