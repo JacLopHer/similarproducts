@@ -65,13 +65,14 @@ class SimilarIdsAdapterTest {
     }
 
     @Test
-    void shouldReturnEmptyFluxWhenApiReturnsEmptyArray() {
+    void shouldReturnEmptyListWhenApiReturnsEmpty() {
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .setBody(""));
 
         StepVerifier.create(adapter.getSimilarIds("123"))
+            .assertNext(ids -> assertThat(ids).isEmpty())
             .verifyComplete();
     }
 
