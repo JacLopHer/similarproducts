@@ -23,6 +23,7 @@
         <spring-boot.version>3.3.2</spring-boot.version>
         <springdoc.version>2.5.0</springdoc.version>
         <restassured.version>5.5.0</restassured.version>
+        <karate.version>1.4.1</karate.version>
         <lombok.version>1.18.34</lombok.version>
         <mockwebserver.version>4.12.0</mockwebserver.version>
         <resilience4j.version>2.2.0</resilience4j.version>
@@ -121,6 +122,12 @@
                 <groupId>org.testcontainers</groupId>
                 <artifactId>toxiproxy</artifactId>
                 <version>1.19.7</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.intuit.karate</groupId>
+                <artifactId>karate-junit5</artifactId>
+                <version>${karate.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
