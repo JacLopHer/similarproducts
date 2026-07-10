@@ -6,7 +6,7 @@
 
     <groupId>org.inditex</groupId>
     <artifactId>similarproducts-parent</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>${revision}</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -27,6 +27,7 @@
         <lombok.version>1.18.34</lombok.version>
         <mockwebserver.version>4.12.0</mockwebserver.version>
         <resilience4j.version>2.2.0</resilience4j.version>
+        <revision>1.0.0</revision>
     </properties>
 
     <dependencyManagement>
