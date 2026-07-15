@@ -1,13 +1,14 @@
-package com.example.similarproducts.domain.service;
+package com.example.similarproducts.application.service;
 
 import com.example.similarproducts.domain.exception.InvalidProductIdException;
 import com.example.similarproducts.domain.model.SimilarProductsRequest;
 import com.example.similarproducts.domain.model.SimilarProductsResponse;
 import com.example.similarproducts.domain.port.ProductDetailPort;
 import com.example.similarproducts.domain.port.SimilarIdsPort;
-import java.util.Objects;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.Objects;
 
 public class GetSimilarProductsUseCase {
 

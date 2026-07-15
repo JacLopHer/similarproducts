@@ -1,8 +1,10 @@
 package com.example.similarproducts.infrastructure.adapter.in.rest;
 
-import com.example.similarproducts.application.dto.ProductDetailDto;
-import com.example.similarproducts.application.dto.SimilarProductsResponseDto;
-import com.example.similarproducts.application.service.GetSimilarProductsService;
+import com.example.similarproducts.infrastructure.adapter.in.rest.dto.ProductDetailDto;
+import com.example.similarproducts.infrastructure.adapter.in.rest.dto.SimilarProductsResponseDto;
+import com.example.similarproducts.application.service.GetSimilarProductsUseCase;
+import com.example.similarproducts.domain.model.SimilarProductsRequest;
+import com.example.similarproducts.infrastructure.mapper.ProductMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -36,10 +38,12 @@ public class SimilarProductsController {
 
     private static final Logger logger = LoggerFactory.getLogger(SimilarProductsController.class);
 
-    private final GetSimilarProductsService getSimilarProductsService;
+    private final GetSimilarProductsUseCase getSimilarProductsUseCase;
+    private final ProductMapper productMapper;
 
-    public SimilarProductsController(GetSimilarProductsService getSimilarProductsService) {
-        this.getSimilarProductsService = getSimilarProductsService;
+    public SimilarProductsController(GetSimilarProductsUseCase getSimilarProductsUseCase, ProductMapper productMapper) {
+        this.getSimilarProductsUseCase = getSimilarProductsUseCase;
+        this.productMapper = productMapper;
     }
 
     @GetMapping("/{productId}/similar")
@@ -47,12 +51,12 @@ public class SimilarProductsController {
             description = "Returns a list of products similar to the specified product. " +
                     "Performs non-blocking (reactive) calls to external APIs with controlled concurrency.")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Similar products list retrieved successfully",
-                content = @Content(mediaType = "application/json",
-                        schema = @Schema(implementation = ProductDetailDto.class, type = "array"))),
-        @ApiResponse(responseCode = "400", description = "Invalid or empty product ID"),
-        @ApiResponse(responseCode = "404", description = "Product not found"),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
+            @ApiResponse(responseCode = "200", description = "Similar products list retrieved successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ProductDetailDto.class, type = "array"))),
+            @ApiResponse(responseCode = "400", description = "Invalid or empty product ID"),
+            @ApiResponse(responseCode = "404", description = "Product not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<Mono<List<ProductDetailDto>>> getSimilarProducts(
             @PathVariable
@@ -65,16 +69,16 @@ public class SimilarProductsController {
         logger.debug("Controller - Processing request for productId: {}", productId);
 
         return ResponseEntity.ok(
-            getSimilarProductsService.getSimilarProducts(productId)
-                .map(SimilarProductsResponseDto::products)
-                .doOnSuccess(products ->
-                    logger.info("Request completed successfully for productId: {} - Found {} similar products",
-                        productId, products.size())
-                )
-                .doOnError(error -> logger.error("Request failed for productId: {} - Error: {}",
-                    productId, error.getClass().getSimpleName()))
-                .doFinally(signalType -> logger.debug("Controller - Request processing finished for productId: {}", productId))
+                getSimilarProductsUseCase.execute(new SimilarProductsRequest(productId))
+                        .map(productMapper::toResponseDto)
+                        .map(SimilarProductsResponseDto::products)
+                        .doOnSuccess(products ->
+                                logger.info("Request completed successfully for productId: {} - Found {} similar products",
+                                        productId, products.size())
+                        )
+                        .doOnError(error -> logger.error("Request failed for productId: {} - Error: {}",
+                                productId, error.getClass().getSimpleName()))
+                        .doFinally(signalType -> logger.debug("Controller - Request processing finished for productId: {}", productId))
         );
     }
 }
-

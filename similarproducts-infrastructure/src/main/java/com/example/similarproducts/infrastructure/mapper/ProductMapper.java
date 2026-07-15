@@ -1,9 +1,9 @@
-package com.example.similarproducts.application.mapper;
+package com.example.similarproducts.infrastructure.mapper;
 
-import com.example.similarproducts.application.dto.ProductDetailDto;
-import com.example.similarproducts.application.dto.SimilarProductsResponseDto;
 import com.example.similarproducts.domain.model.Product;
 import com.example.similarproducts.domain.model.SimilarProductsResponse;
+import com.example.similarproducts.infrastructure.adapter.in.rest.dto.ProductDetailDto;
+import com.example.similarproducts.infrastructure.adapter.in.rest.dto.SimilarProductsResponseDto;
 
 public class ProductMapper {
 
@@ -15,4 +15,3 @@ public class ProductMapper {
         return new SimilarProductsResponseDto(response.products().stream().map(this::toDto).toList());
     }
 }
-

@@ -1,11 +1,10 @@
 package com.example.similarproducts.infrastructure.config;
 
 import com.example.similarproducts.application.config.ApplicationConfig;
-import com.example.similarproducts.application.mapper.ProductMapper;
-import com.example.similarproducts.application.service.GetSimilarProductsService;
+import com.example.similarproducts.application.service.GetSimilarProductsUseCase;
 import com.example.similarproducts.domain.port.ProductDetailPort;
 import com.example.similarproducts.domain.port.SimilarIdsPort;
-import com.example.similarproducts.domain.service.GetSimilarProductsUseCase;
+import com.example.similarproducts.infrastructure.mapper.ProductMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,26 +17,16 @@ public class InfrastructureConfig {
     }
 
     @Bean
-    public ProductMapper productMapper(ApplicationConfig applicationConfig) {
-        return applicationConfig.productMapper();
+    public ProductMapper productMapper() {
+        return new ProductMapper();
     }
 
     @Bean
     public GetSimilarProductsUseCase getSimilarProductsUseCase(
-        ApplicationConfig applicationConfig,
-        SimilarIdsPort similarIdsPort,
-        ProductDetailPort productDetailPort
+            ApplicationConfig applicationConfig,
+            SimilarIdsPort similarIdsPort,
+            ProductDetailPort productDetailPort
     ) {
         return applicationConfig.getSimilarProductsUseCase(similarIdsPort, productDetailPort);
     }
-
-    @Bean
-    public GetSimilarProductsService getSimilarProductsService(
-        ApplicationConfig applicationConfig,
-        GetSimilarProductsUseCase useCase,
-        ProductMapper productMapper
-    ) {
-        return applicationConfig.getSimilarProductsService(useCase, productMapper);
-    }
 }
-
