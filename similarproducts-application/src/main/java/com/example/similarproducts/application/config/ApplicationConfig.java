@@ -2,9 +2,9 @@ package com.example.similarproducts.application.config;
 
 import com.example.similarproducts.application.mapper.ProductMapper;
 import com.example.similarproducts.application.service.GetSimilarProductsService;
+import com.example.similarproducts.application.service.GetSimilarProductsUseCase;
 import com.example.similarproducts.domain.port.ProductDetailPort;
 import com.example.similarproducts.domain.port.SimilarIdsPort;
-import com.example.similarproducts.domain.service.GetSimilarProductsUseCase;
 
 public class ApplicationConfig {
 

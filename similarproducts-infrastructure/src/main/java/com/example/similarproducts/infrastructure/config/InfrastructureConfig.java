@@ -5,7 +5,7 @@ import com.example.similarproducts.application.mapper.ProductMapper;
 import com.example.similarproducts.application.service.GetSimilarProductsService;
 import com.example.similarproducts.domain.port.ProductDetailPort;
 import com.example.similarproducts.domain.port.SimilarIdsPort;
-import com.example.similarproducts.domain.service.GetSimilarProductsUseCase;
+import com.example.similarproducts.application.service.GetSimilarProductsUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

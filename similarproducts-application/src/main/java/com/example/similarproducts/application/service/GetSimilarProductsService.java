@@ -3,7 +3,6 @@ package com.example.similarproducts.application.service;
 import com.example.similarproducts.application.dto.SimilarProductsResponseDto;
 import com.example.similarproducts.application.mapper.ProductMapper;
 import com.example.similarproducts.domain.model.SimilarProductsRequest;
-import com.example.similarproducts.domain.service.GetSimilarProductsUseCase;
 import java.util.Objects;
 import reactor.core.publisher.Mono;
 

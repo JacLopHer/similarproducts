@@ -15,7 +15,6 @@ import com.example.similarproducts.domain.exception.ProductNotFoundException;
 import com.example.similarproducts.domain.model.Product;
 import com.example.similarproducts.domain.model.SimilarProductsRequest;
 import com.example.similarproducts.domain.model.SimilarProductsResponse;
-import com.example.similarproducts.domain.service.GetSimilarProductsUseCase;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
