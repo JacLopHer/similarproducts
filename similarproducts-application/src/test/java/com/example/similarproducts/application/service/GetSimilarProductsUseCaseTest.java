@@ -12,7 +12,6 @@ import com.example.similarproducts.domain.model.Product;
 import com.example.similarproducts.domain.model.SimilarProductsRequest;
 import com.example.similarproducts.domain.port.ProductDetailPort;
 import com.example.similarproducts.domain.port.SimilarIdsPort;
-import com.example.similarproducts.domain.service.GetSimilarProductsUseCase;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

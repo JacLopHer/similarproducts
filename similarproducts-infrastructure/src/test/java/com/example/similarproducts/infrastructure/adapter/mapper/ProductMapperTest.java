@@ -1,13 +1,15 @@
-package com.example.similarproducts.application.mapper;
+package com.example.similarproducts.infrastructure.adapter.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.example.similarproducts.application.dto.ProductDetailDto;
-import com.example.similarproducts.application.dto.SimilarProductsResponseDto;
 import com.example.similarproducts.domain.model.Product;
 import com.example.similarproducts.domain.model.SimilarProductsResponse;
 import java.math.BigDecimal;
 import java.util.List;
+
+import com.example.similarproducts.infrastructure.adapter.in.rest.dto.ProductDetailDto;
+import com.example.similarproducts.infrastructure.adapter.in.rest.dto.SimilarProductsResponseDto;
+import com.example.similarproducts.infrastructure.mapper.ProductMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -113,7 +115,7 @@ class ProductMapperTest {
         Product product2 = new Product("2", "Expensive", new BigDecimal("999.99"), true);
         Product product3 = new Product("3", "Precise", new BigDecimal("19.9999"), false);
         SimilarProductsResponse response = new SimilarProductsResponse(
-            List.of(product1, product2, product3)
+                List.of(product1, product2, product3)
         );
 
         // Act
