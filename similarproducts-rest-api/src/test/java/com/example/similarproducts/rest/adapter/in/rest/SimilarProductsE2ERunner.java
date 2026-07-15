@@ -1,4 +1,4 @@
-package com.example.similarproducts.infrastructure.adapter.in.rest;
+package com.example.similarproducts.rest.adapter.in.rest;
 
 import com.intuit.karate.junit5.Karate;
 

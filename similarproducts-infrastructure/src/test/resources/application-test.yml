@@ -13,3 +13,4 @@ external-api:
   endpoints:
     similar-ids: /product/{productId}/similarids
 
+
