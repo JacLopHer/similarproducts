@@ -1,4 +1,4 @@
-package com.example.similarproducts.infrastructure.adapter.in.rest;
+package com.example.similarproducts.rest.adapter.in.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -7,8 +7,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.example.similarproducts.infrastructure.adapter.in.rest.dto.ProductDetailDto;
-import com.example.similarproducts.application.service.GetSimilarProductsUseCase;
+import com.example.similarproducts.application.port.in.GetSimilarProductsUseCase;
 import com.example.similarproducts.domain.exception.InvalidProductIdException;
 import com.example.similarproducts.domain.exception.ProductNotFoundException;
 import com.example.similarproducts.domain.model.Product;
@@ -16,7 +15,9 @@ import com.example.similarproducts.domain.model.SimilarProductsResponse;
 import java.math.BigDecimal;
 import java.util.List;
 
-import com.example.similarproducts.infrastructure.mapper.ProductMapper;
+import com.example.similarproducts.rest.adapter.in.rest.controller.SimilarProductsController;
+import com.example.similarproducts.rest.adapter.in.rest.dto.ProductDetailDto;
+import com.example.similarproducts.rest.adapter.in.rest.mapper.SimilarProductsRestMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,13 +35,13 @@ import reactor.test.StepVerifier;
 class SimilarProductsControllerTest {
 
     private GetSimilarProductsUseCase useCaseMock;
-    private com.example.similarproducts.infrastructure.mapper.ProductMapper productMapper;
+    private SimilarProductsRestMapper productMapper;
     private SimilarProductsController controller;
 
     @BeforeEach
     void setUp() {
         useCaseMock = mock(GetSimilarProductsUseCase.class);
-        productMapper = new ProductMapper();
+        productMapper = new SimilarProductsRestMapper();
         controller = new SimilarProductsController(useCaseMock, productMapper);
     }
 

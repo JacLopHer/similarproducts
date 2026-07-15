@@ -1,10 +1,10 @@
-package com.example.similarproducts.infrastructure.adapter.in.rest;
+package com.example.similarproducts.rest.adapter.in.rest.controller;
 
-import com.example.similarproducts.infrastructure.adapter.in.rest.dto.ProductDetailDto;
-import com.example.similarproducts.infrastructure.adapter.in.rest.dto.SimilarProductsResponseDto;
-import com.example.similarproducts.application.service.GetSimilarProductsUseCase;
+import com.example.similarproducts.application.port.in.GetSimilarProductsUseCase;
 import com.example.similarproducts.domain.model.SimilarProductsRequest;
-import com.example.similarproducts.infrastructure.mapper.ProductMapper;
+import com.example.similarproducts.rest.adapter.in.rest.dto.ProductDetailDto;
+import com.example.similarproducts.rest.adapter.in.rest.dto.SimilarProductsResponseDto;
+import com.example.similarproducts.rest.adapter.in.rest.mapper.SimilarProductsRestMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -39,9 +39,9 @@ public class SimilarProductsController {
     private static final Logger logger = LoggerFactory.getLogger(SimilarProductsController.class);
 
     private final GetSimilarProductsUseCase getSimilarProductsUseCase;
-    private final ProductMapper productMapper;
+    private final SimilarProductsRestMapper productMapper;
 
-    public SimilarProductsController(GetSimilarProductsUseCase getSimilarProductsUseCase, ProductMapper productMapper) {
+    public SimilarProductsController(GetSimilarProductsUseCase getSimilarProductsUseCase, SimilarProductsRestMapper productMapper) {
         this.getSimilarProductsUseCase = getSimilarProductsUseCase;
         this.productMapper = productMapper;
     }

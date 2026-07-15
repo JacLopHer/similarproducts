@@ -1,8 +1,8 @@
-package com.example.similarproducts.infrastructure.adapter.in.rest;
+package com.example.similarproducts.rest.adapter.in.rest;
 
 import com.example.similarproducts.domain.exception.InvalidProductIdException;
 import com.example.similarproducts.domain.exception.ProductNotFoundException;
-import com.example.similarproducts.infrastructure.adapter.in.rest.dto.ErrorResponse;
+import com.example.similarproducts.rest.adapter.in.rest.dto.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

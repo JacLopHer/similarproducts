@@ -1,11 +1,14 @@
-package com.example.similarproducts.infrastructure.mapper;
+package com.example.similarproducts.rest.adapter.in.rest.mapper;
 
+import com.example.similarproducts.rest.adapter.in.rest.dto.ProductDetailDto;
+import com.example.similarproducts.rest.adapter.in.rest.dto.SimilarProductsResponseDto;
 import com.example.similarproducts.domain.model.Product;
 import com.example.similarproducts.domain.model.SimilarProductsResponse;
-import com.example.similarproducts.infrastructure.adapter.in.rest.dto.ProductDetailDto;
-import com.example.similarproducts.infrastructure.adapter.in.rest.dto.SimilarProductsResponseDto;
+import org.springframework.stereotype.Component;
 
-public class ProductMapper {
+
+@Component
+public class SimilarProductsRestMapper {
 
     public ProductDetailDto toDto(Product product) {
         return new ProductDetailDto(product.id(), product.name(), product.price(), product.availability());

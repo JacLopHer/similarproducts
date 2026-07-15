@@ -1,4 +1,4 @@
-package com.example.similarproducts.infrastructure.adapter.in.rest.dto;
+package com.example.similarproducts.rest.adapter.in.rest.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Instant;

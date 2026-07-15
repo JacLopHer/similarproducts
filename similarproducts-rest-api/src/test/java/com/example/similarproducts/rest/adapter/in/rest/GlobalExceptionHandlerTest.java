@@ -1,8 +1,8 @@
-package com.example.similarproducts.infrastructure.adapter.in.rest;
+package com.example.similarproducts.rest.adapter.in.rest;
 
 import com.example.similarproducts.domain.exception.InvalidProductIdException;
 import com.example.similarproducts.domain.exception.ProductNotFoundException;
-import com.example.similarproducts.infrastructure.adapter.in.rest.dto.ErrorResponse;
+import com.example.similarproducts.rest.adapter.in.rest.dto.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,6 +43,7 @@ class GlobalExceptionHandlerTest {
         ServerWebExchange exchange = createMockExchange("/product/999/similar");
 
         ResponseEntity<Mono<ErrorResponse>> responseEntity = handler.handleProductNotFound(ex, exchange);
+        assertNotNull(responseEntity.getBody());
         ErrorResponse response = responseEntity.getBody().block();
 
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
@@ -61,6 +62,7 @@ class GlobalExceptionHandlerTest {
         ServerWebExchange exchange = createMockExchange("/product/invalid/similar");
 
         ResponseEntity<Mono<ErrorResponse>> responseEntity = handler.handleBadRequest(ex, exchange);
+        assertNotNull(responseEntity.getBody());
         ErrorResponse response = responseEntity.getBody().block();
 
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
@@ -79,6 +81,7 @@ class GlobalExceptionHandlerTest {
         ServerWebExchange exchange = createMockExchange("/product//similar");
 
         ResponseEntity<Mono<ErrorResponse>> responseEntity = handler.handleBadRequest(ex, exchange);
+        assertNotNull(responseEntity.getBody());
         ErrorResponse response = responseEntity.getBody().block();
 
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
@@ -94,6 +97,7 @@ class GlobalExceptionHandlerTest {
         ServerWebExchange exchange = createMockExchange("/product/1/similar");
 
         ResponseEntity<Mono<ErrorResponse>> responseEntity = handler.handleUnexpected(ex, exchange);
+        assertNotNull(responseEntity.getBody());
         ErrorResponse response = responseEntity.getBody().block();
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, responseEntity.getStatusCode());
@@ -111,8 +115,10 @@ class GlobalExceptionHandlerTest {
         ServerWebExchange exchange = createMockExchange("/product/test/similar");
 
         ResponseEntity<Mono<ErrorResponse>> responseEntity = handler.handleProductNotFound(ex, exchange);
+        assertNotNull(responseEntity.getBody());
         ErrorResponse response = responseEntity.getBody().block();
 
+        assertNotNull(response);
         assertNotNull(response.path());
         assertTrue(response.path().contains("/product/test/similar"));
         assertEquals(404, response.status());
@@ -125,6 +131,7 @@ class GlobalExceptionHandlerTest {
         ServerWebExchange exchange = createMockExchange("/product/test/similar");
 
         ResponseEntity<Mono<ErrorResponse>> responseEntity = handler.handleBadRequest(ex, exchange);
+        assertNotNull(responseEntity.getBody());
         ErrorResponse response = responseEntity.getBody().block();
 
         assertNotNull(response);

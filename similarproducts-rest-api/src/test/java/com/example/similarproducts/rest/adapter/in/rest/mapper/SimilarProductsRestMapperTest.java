@@ -1,4 +1,4 @@
-package com.example.similarproducts.infrastructure.adapter.mapper;
+package com.example.similarproducts.rest.adapter.in.rest.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -7,21 +7,20 @@ import com.example.similarproducts.domain.model.SimilarProductsResponse;
 import java.math.BigDecimal;
 import java.util.List;
 
-import com.example.similarproducts.infrastructure.adapter.in.rest.dto.ProductDetailDto;
-import com.example.similarproducts.infrastructure.adapter.in.rest.dto.SimilarProductsResponseDto;
-import com.example.similarproducts.infrastructure.mapper.ProductMapper;
+import com.example.similarproducts.rest.adapter.in.rest.dto.ProductDetailDto;
+import com.example.similarproducts.rest.adapter.in.rest.dto.SimilarProductsResponseDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("ProductMapper Tests")
-class ProductMapperTest {
+@DisplayName("SimilarProductsRestMapper Tests")
+class SimilarProductsRestMapperTest {
 
-    private ProductMapper mapper;
+    private SimilarProductsRestMapper mapper;
 
     @BeforeEach
     void setUp() {
-        mapper = new ProductMapper();
+        mapper = new SimilarProductsRestMapper();
     }
 
     @Test
