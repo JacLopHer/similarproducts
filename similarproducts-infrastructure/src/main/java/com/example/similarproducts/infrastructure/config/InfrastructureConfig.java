@@ -1,7 +1,7 @@
 package com.example.similarproducts.infrastructure.config;
 
 import com.example.similarproducts.application.config.ApplicationConfig;
-import com.example.similarproducts.application.service.GetSimilarProductsUseCase;
+import com.example.similarproducts.application.port.in.GetSimilarProductsUseCase;
 import com.example.similarproducts.domain.port.ProductDetailPort;
 import com.example.similarproducts.domain.port.SimilarIdsPort;
 import com.example.similarproducts.infrastructure.mapper.ProductMapper;

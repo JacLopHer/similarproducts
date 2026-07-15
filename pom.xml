@@ -14,6 +14,7 @@
         <module>similarproducts-application</module>
         <module>similarproducts-infrastructure</module>
         <module>similarproducts-boot</module>
+        <module>similarproducts-rest-api</module>
     </modules>
 
     <properties>

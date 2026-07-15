@@ -1,5 +1,6 @@
 package com.example.similarproducts.application.service;
 
+import com.example.similarproducts.application.port.in.GetSimilarProductsUseCase;
 import com.example.similarproducts.domain.exception.InvalidProductIdException;
 import com.example.similarproducts.domain.model.SimilarProductsRequest;
 import com.example.similarproducts.domain.model.SimilarProductsResponse;
@@ -10,7 +11,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Objects;
 
-public class GetSimilarProductsUseCase {
+public class GetSimilarProductsService implements GetSimilarProductsUseCase {
 
     private static final int DEFAULT_DETAIL_CONCURRENCY = 4;
 
@@ -18,11 +19,11 @@ public class GetSimilarProductsUseCase {
     private final ProductDetailPort productDetailPort;
     private final int detailConcurrency;
 
-    public GetSimilarProductsUseCase(SimilarIdsPort similarIdsPort, ProductDetailPort productDetailPort) {
+    public GetSimilarProductsService(SimilarIdsPort similarIdsPort, ProductDetailPort productDetailPort) {
         this(similarIdsPort, productDetailPort, DEFAULT_DETAIL_CONCURRENCY);
     }
 
-    public GetSimilarProductsUseCase(SimilarIdsPort similarIdsPort, ProductDetailPort productDetailPort, int detailConcurrency) {
+    public GetSimilarProductsService(SimilarIdsPort similarIdsPort, ProductDetailPort productDetailPort, int detailConcurrency) {
         this.similarIdsPort = Objects.requireNonNull(similarIdsPort, "similarIdsPort is required");
         this.productDetailPort = Objects.requireNonNull(productDetailPort, "productDetailPort is required");
         if (detailConcurrency <= 0) {
