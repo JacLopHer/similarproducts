@@ -1,4 +1,4 @@
-package com.example.similarproducts.application.dto;
+package com.example.similarproducts.infrastructure.adapter.in.rest.dto;
 
 import java.util.List;
 
@@ -8,4 +8,3 @@ public record SimilarProductsResponseDto(List<ProductDetailDto> products) {
         products = products == null ? List.of() : List.copyOf(products);
     }
 }
-
