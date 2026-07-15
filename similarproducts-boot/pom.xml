@@ -30,6 +30,11 @@
             <artifactId>similarproducts-infrastructure</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.inditex</groupId>
+            <artifactId>similarproducts-rest-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

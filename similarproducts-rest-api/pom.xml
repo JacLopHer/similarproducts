@@ -11,20 +11,39 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>similarproducts-infrastructure</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>similarproducts-rest-api</artifactId>
+    <name>Similar Products REST API</name>
+    <description>REST adapter layer for Similar Products microservice</description>
 
     <dependencies>
-        <!-- Domain & Application layers -->
-        <dependency>
-            <groupId>org.inditex</groupId>
-            <artifactId>similarproducts-domain</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+        <!-- Application Layer (Puertos) -->
         <dependency>
             <groupId>org.inditex</groupId>
             <artifactId>similarproducts-application</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <!-- Spring Web & Validation -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- Swagger/OpenAPI -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+        </dependency>
+
+        <!-- Lombok (opcional pero recomendado para DTOs) -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <!-- Test Dependencies -->
@@ -39,13 +58,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>mockwebserver</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <groupId>com.intuit.karate</groupId>
+            <artifactId>karate-junit5</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -53,8 +67,8 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
