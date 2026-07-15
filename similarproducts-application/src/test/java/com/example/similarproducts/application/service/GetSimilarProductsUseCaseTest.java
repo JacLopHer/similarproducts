@@ -25,13 +25,13 @@ class GetSimilarProductsUseCaseTest {
 
     private SimilarIdsPort similarIdsPortMock;
     private ProductDetailPort productDetailPortMock;
-    private GetSimilarProductsUseCase useCase;
+    private GetSimilarProductsService service;
 
     @BeforeEach
     void setUp() {
         similarIdsPortMock = mock(SimilarIdsPort.class);
         productDetailPortMock = mock(ProductDetailPort.class);
-        useCase = new GetSimilarProductsUseCase(similarIdsPortMock, productDetailPortMock);
+        service = new GetSimilarProductsService(similarIdsPortMock, productDetailPortMock);
     }
 
     @Test
@@ -50,7 +50,7 @@ class GetSimilarProductsUseCaseTest {
             .thenReturn(Mono.just(product3));
 
         // Act & Assert
-        StepVerifier.create(useCase.execute(new SimilarProductsRequest(productId)))
+        StepVerifier.create(service.execute(new SimilarProductsRequest(productId)))
             .assertNext(response -> {
                 assertThat(response.products()).hasSize(2);
                 assertThat(response.products()).containsExactly(product2, product3);
@@ -67,7 +67,7 @@ class GetSimilarProductsUseCaseTest {
             .thenReturn(Mono.just(List.of()));
 
         // Act & Assert
-        StepVerifier.create(useCase.execute(new SimilarProductsRequest(productId)))
+        StepVerifier.create(service.execute(new SimilarProductsRequest(productId)))
             .assertNext(response -> {
                 assertThat(response.products()).isEmpty();
             })
@@ -85,7 +85,7 @@ class GetSimilarProductsUseCaseTest {
             .thenReturn(Mono.error(exception));
 
         // Act & Assert
-        StepVerifier.create(useCase.execute(new SimilarProductsRequest(productId)))
+        StepVerifier.create(service.execute(new SimilarProductsRequest(productId)))
             .expectError(ProductNotFoundException.class)
             .verify();
     }
@@ -106,7 +106,7 @@ class GetSimilarProductsUseCaseTest {
             .thenReturn(Mono.error(exception));
 
         // Act & Assert
-        StepVerifier.create(useCase.execute(new SimilarProductsRequest(productId)))
+        StepVerifier.create(service.execute(new SimilarProductsRequest(productId)))
             .expectError(ProductNotFoundException.class)
             .verify();
     }
@@ -124,7 +124,7 @@ class GetSimilarProductsUseCaseTest {
             .thenReturn(Mono.just(product2));
 
         // Act & Assert
-        StepVerifier.create(useCase.execute(new SimilarProductsRequest(productId)))
+        StepVerifier.create(service.execute(new SimilarProductsRequest(productId)))
             .assertNext(response -> {
                 assertThat(response.products()).hasSize(1);
                 assertThat(response.products()).containsExactly(product2);
@@ -141,7 +141,7 @@ class GetSimilarProductsUseCaseTest {
         // Act & Assert
         org.junit.jupiter.api.Assertions.assertThrows(
             InvalidProductIdException.class,
-            () -> useCase.execute(new SimilarProductsRequest(""))
+            () -> service.execute(new SimilarProductsRequest(""))
         );
     }
 
@@ -151,7 +151,7 @@ class GetSimilarProductsUseCaseTest {
         // Act & Assert
         org.junit.jupiter.api.Assertions.assertThrows(
             InvalidProductIdException.class,
-            () -> useCase.execute(new SimilarProductsRequest(null))
+            () -> service.execute(new SimilarProductsRequest(null))
         );
     }
 
@@ -161,7 +161,7 @@ class GetSimilarProductsUseCaseTest {
         // Act & Assert
         org.junit.jupiter.api.Assertions.assertThrows(
             InvalidProductIdException.class,
-            () -> useCase.execute(null)
+            () -> service.execute(null)
         );
     }
 
@@ -179,7 +179,7 @@ class GetSimilarProductsUseCaseTest {
             .thenReturn(Mono.just(product2));
 
         // Act & Assert
-        StepVerifier.create(useCase.execute(new SimilarProductsRequest(productId)))
+        StepVerifier.create(service.execute(new SimilarProductsRequest(productId)))
             .assertNext(response -> {
                 assertThat(response.products()).hasSize(1);
                 assertThat(response.products()).containsExactly(product2);
@@ -203,7 +203,7 @@ class GetSimilarProductsUseCaseTest {
             .thenReturn(Mono.just(product3));
 
         // Act & Assert
-        StepVerifier.create(useCase.execute(new SimilarProductsRequest(productId)))
+        StepVerifier.create(service.execute(new SimilarProductsRequest(productId)))
             .assertNext(response -> {
                 assertThat(response.products()).hasSize(2);
                 assertThat(response.products()).containsExactly(product2, product3);
@@ -233,7 +233,7 @@ class GetSimilarProductsUseCaseTest {
             .thenReturn(Mono.just(product1));
 
         // Act & Assert
-        StepVerifier.create(useCase.execute(new SimilarProductsRequest(productId)))
+        StepVerifier.create(service.execute(new SimilarProductsRequest(productId)))
             .assertNext(response -> {
                 assertThat(response.products()).hasSize(3);
                 assertThat(response.products()).containsExactly(product3, product2, product1);
@@ -245,7 +245,7 @@ class GetSimilarProductsUseCaseTest {
     @DisplayName("Should respect concurrency limit for detail fetching")
     void shouldRespectConcurrencyLimitForDetailFetching() {
         // Arrange - Create use case with concurrency of 2
-        useCase = new GetSimilarProductsUseCase(similarIdsPortMock, productDetailPortMock, 2);
+        service = new GetSimilarProductsService(similarIdsPortMock, productDetailPortMock, 2);
 
         Product product2 = new Product("2", "Product 2", new BigDecimal("20.00"), true);
         Product product3 = new Product("3", "Product 3", new BigDecimal("30.00"), true);
@@ -261,7 +261,7 @@ class GetSimilarProductsUseCaseTest {
             .thenReturn(Mono.just(product4));
 
         // Act & Assert
-        StepVerifier.create(useCase.execute(new SimilarProductsRequest("1")))
+        StepVerifier.create(service.execute(new SimilarProductsRequest("1")))
             .assertNext(response -> {
                 assertThat(response.products()).hasSize(3);
                 assertThat(response.products()).containsExactly(product2, product3, product4);
@@ -287,7 +287,7 @@ class GetSimilarProductsUseCaseTest {
             .thenReturn(Mono.just(product2));
 
         // Act & Assert
-        StepVerifier.create(useCase.execute(new SimilarProductsRequest(productId)))
+        StepVerifier.create(service.execute(new SimilarProductsRequest(productId)))
             .assertNext(response -> {
                 assertThat(response.products()).hasSize(1);
                 assertThat(response.products()).containsExactly(product2);
@@ -302,7 +302,7 @@ class GetSimilarProductsUseCaseTest {
     @DisplayName("Should construct use case with valid parameters")
     void shouldConstructUseCaseWithValidParameters() {
         // Assert - if construction succeeds without exception
-        assertThat(useCase).isNotNull();
+        assertThat(service).isNotNull();
     }
 
     @Test
@@ -311,12 +311,12 @@ class GetSimilarProductsUseCaseTest {
         // Act & Assert
         org.junit.jupiter.api.Assertions.assertThrows(
             IllegalArgumentException.class,
-            () -> new GetSimilarProductsUseCase(similarIdsPortMock, productDetailPortMock, 0)
+            () -> new GetSimilarProductsService(similarIdsPortMock, productDetailPortMock, 0)
         );
 
         org.junit.jupiter.api.Assertions.assertThrows(
             IllegalArgumentException.class,
-            () -> new GetSimilarProductsUseCase(similarIdsPortMock, productDetailPortMock, -5)
+            () -> new GetSimilarProductsService(similarIdsPortMock, productDetailPortMock, -5)
         );
     }
 
@@ -326,7 +326,7 @@ class GetSimilarProductsUseCaseTest {
         // Act & Assert
         org.junit.jupiter.api.Assertions.assertThrows(
             NullPointerException.class,
-            () -> new GetSimilarProductsUseCase(null, productDetailPortMock)
+            () -> new GetSimilarProductsService(null, productDetailPortMock)
         );
     }
 
@@ -336,7 +336,7 @@ class GetSimilarProductsUseCaseTest {
         // Act & Assert
         org.junit.jupiter.api.Assertions.assertThrows(
             NullPointerException.class,
-            () -> new GetSimilarProductsUseCase(similarIdsPortMock, null)
+            () -> new GetSimilarProductsService(similarIdsPortMock, null)
         );
     }
 
