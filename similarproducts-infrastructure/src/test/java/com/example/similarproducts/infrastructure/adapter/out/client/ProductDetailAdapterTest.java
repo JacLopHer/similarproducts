@@ -1,10 +1,8 @@
 package com.example.similarproducts.infrastructure.adapter.out.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.similarproducts.domain.exception.ProductNotFoundException;
-import com.example.similarproducts.domain.model.Product;
 import com.example.similarproducts.infrastructure.mapper.AdapterMapper;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -22,14 +20,13 @@ class ProductDetailAdapterTest {
 
     private MockWebServer mockWebServer;
     private ProductDetailAdapter adapter;
-    private AdapterMapper adapterMapper;
 
     @BeforeEach
     void setUp() throws Exception {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
 
-        adapterMapper = new AdapterMapper();
+        AdapterMapper adapterMapper = new AdapterMapper();
         WebClient webClient = WebClient.builder()
             .baseUrl(mockWebServer.url("/").toString())
             .build();
@@ -203,16 +200,16 @@ class ProductDetailAdapterTest {
 
         // Test second product
         StepVerifier.create(adapter.getProductDetail("2"))
-            .assertNext(product -> {
-                assertThat(product.availability()).isTrue();
-            })
+            .assertNext(product ->
+                assertThat(product.availability()).isTrue()
+            )
             .verifyComplete();
 
         // Test third product
         StepVerifier.create(adapter.getProductDetail("3"))
-            .assertNext(product -> {
-                assertThat(product.price()).isEqualTo(new BigDecimal("300.00"));
-            })
+            .assertNext(product ->
+                assertThat(product.price()).isEqualTo(new BigDecimal("300.00"))
+            )
             .verifyComplete();
     }
 
